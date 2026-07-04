@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ContaSim · Sistema Contable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root{
+    --navy-950:#10182B; --navy-800:#1B2740; --navy-700:#233252;
+    --paper:#F7F4EC; --paper-raised:#FFFFFF; --line:#E4DFCF;
+    --ink:#1E2233; --ink-soft:#5B5F6E;
+    --gold:#B98B2A; --gold-soft:#E7D7A8; --gold-bg:#FBF3DF;
+    --teal:#2E6B5E; --teal-bg:#E8F1EE;
+    --rust:#A8462E; --rust-bg:#FBEAE4;
+    --blue:#2E5C8A; --blue-bg:#E8F0F8;
+    --radius:10px; --shadow:0 1px 2px rgba(16,24,43,.06), 0 8px 24px rgba(16,24,43,.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans',sans-serif; -webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.display{font-family:'Fraunces',serif; font-weight:600; letter-spacing:-0.01em;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  button,select,input{font-family:inherit;}
+  a{color:inherit;}
+
+  /* ---------- LOGIN ---------- */
+  #login-screen{
+    position:fixed; inset:0; background:var(--navy-950); display:flex; align-items:center; justify-content:center; z-index:100;
+    background-image:radial-gradient(circle at 20% 20%, rgba(185,139,42,.12), transparent 40%), radial-gradient(circle at 80% 80%, rgba(46,107,94,.15), transparent 40%);
+  }
+  .login-card{width:380px; background:var(--paper-raised); border-radius:14px; padding:34px 32px; box-shadow:0 20px 60px rgba(0,0,0,.35);}
+  .login-brand{display:flex; align-items:center; gap:10px; margin-bottom:22px;}
+  .login-brand .brand-mark{width:38px;height:38px;border-radius:9px; background:linear-gradient(155deg,var(--gold),#8f6a1c); display:flex;align-items:center;justify-content:center; font-family:'Fraunces',serif; font-weight:700; color:var(--navy-950); font-size:17px;}
+  .login-brand .name{font-family:'Fraunces',serif; font-size:19px; font-weight:600;}
+  .login-brand .tag{font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.06em;}
+  .login-card h2{font-size:18px; margin:0 0 4px;}
+  .login-card p.sub{font-size:12.5px; color:var(--ink-soft); margin:0 0 20px;}
+  .login-error{display:none; background:var(--rust-bg); color:var(--rust); font-size:12.5px; padding:8px 12px; border-radius:8px; margin-bottom:12px;}
+  .login-demo{margin-top:18px; background:#F2EFE6; border:1px dashed var(--line); border-radius:8px; padding:10px 12px; font-size:11.5px; color:var(--ink-soft); line-height:1.7;}
+  .login-demo b{color:var(--ink); font-family:'IBM Plex Mono',monospace;}
+
+  .app{display:flex; min-height:100vh;}
+  .sidebar{width:240px; flex-shrink:0; background:var(--navy-950); color:#EDEAE0; display:flex; flex-direction:column; padding:20px 16px; position:sticky; top:0; height:100vh; overflow-y:auto;}
+  .brand{display:flex; align-items:center; gap:10px; padding:4px 6px 20px 6px; border-bottom:1px solid rgba(255,255,255,.1); margin-bottom:14px;}
+  .brand-mark{width:34px;height:34px;border-radius:8px; background:linear-gradient(155deg,var(--gold),#8f6a1c); display:flex;align-items:center;justify-content:center; font-family:'Fraunces',serif; font-weight:700; color:var(--navy-950); font-size:16px; flex-shrink:0;}
+  .brand-text .name{font-family:'Fraunces',serif; font-size:17px; font-weight:600; line-height:1.1;}
+  .brand-text .tag{font-size:10.5px; color:#9AA3BE; letter-spacing:.06em; text-transform:uppercase;}
+  .nav-group-label{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:#6C7594; margin:14px 10px 6px;}
+  .nav-item{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; cursor:pointer; color:#C7CCE0; font-size:13.5px; margin-bottom:1px; border:1px solid transparent; transition:background .15s ease, color .15s ease;}
+  .nav-item:hover{background:rgba(255,255,255,.06); color:#fff;}
+  .nav-item.active{background:var(--navy-700); color:#fff; border-color:rgba(185,139,42,.35);}
+  .nav-item .ic{width:18px;height:18px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--gold-soft);}
+  .nav-item.active .ic{color:var(--gold);}
+  .sidebar-foot{margin-top:auto; padding-top:12px; border-top:1px solid rgba(255,255,255,.1); font-size:12px;}
+  .sidebar-user{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+  .sidebar-user .av{width:26px;height:26px;border-radius:50%; background:var(--gold); color:var(--navy-950); font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .sidebar-user .who{line-height:1.25;}
+  .sidebar-user .who .n{font-weight:600; color:#fff; font-size:12.5px;}
+  .sidebar-user .who .r{color:#9AA3BE; font-size:10.5px;}
+  .storage-tag{font-size:10px; color:#7C86A6; margin:4px 0 8px;}
+  .storage-tag.ok{color:#7FBFA8;}
+  .logout-btn{width:100%; text-align:left; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); color:#EDEAE0; padding:6px 9px; border-radius:7px; font-size:12px; cursor:pointer;}
+  .logout-btn:hover{background:rgba(255,255,255,.12);}
+
+  .content{flex:1; min-width:0;}
+  .topbar{padding:22px 40px 0; border-bottom:1px solid var(--line); background:var(--paper); position:sticky; top:0; z-index:5; padding-bottom:14px;}
+  .topbar .eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:.09em; color:var(--gold); font-weight:600; margin-bottom:5px;}
+  .topbar h1{font-size:23px; margin:0 0 4px;}
+  .topbar p{margin:0 0 12px; color:var(--ink-soft); font-size:13px; max-width:680px;}
+  .switcher-bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--paper-raised); border:1px solid var(--line); border-radius:8px; padding:8px 12px; font-size:12.5px;}
+  .switcher-bar select{padding:5px 8px; border:1px solid var(--line); border-radius:6px; font-size:12.5px; background:#FCFBF7;}
+  .switcher-bar .meta{color:var(--ink-soft);}
+  .switcher-bar .pill{padding:2px 8px; border-radius:99px; font-weight:600; font-size:11px;}
+
+  .view{display:none; padding:24px 40px 60px; max-width:1080px;}
+  .view.active{display:block;}
+
+  .card{background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px; margin-bottom:18px; position:relative;}
+  .card.ledger{border-left:3px solid var(--rust); padding-left:24px;}
+  .card h3{font-size:15.5px; margin:0 0 14px;}
+
+  table.data{width:100%; border-collapse:collapse; font-size:13px;}
+  table.data th{text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); padding:0 9px 9px; border-bottom:1px solid var(--line); font-weight:600;}
+  table.data td{padding:9px 9px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  table.data tr:last-child td{border-bottom:none;}
+  table.data tr.total-row td{border-top:2px solid var(--ink); font-weight:700; border-bottom:none;}
+  table.data tr.subtotal-row td{background:#F2EFE6; font-weight:700;}
+  .num-cell{font-family:'IBM Plex Mono',monospace; text-align:right;}
+  .pill{display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:99px; font-size:11px; font-weight:600;}
+  .pill.gold{background:var(--gold-bg); color:#8A6A1E;}
+  .pill.teal{background:var(--teal-bg); color:var(--teal);}
+  .pill.rust{background:var(--rust-bg); color:var(--rust);}
+  .pill.blue{background:var(--blue-bg); color:var(--blue);}
+
+  .btn{display:inline-flex; align-items:center; gap:7px; padding:8px 15px; border-radius:8px; border:1px solid var(--line); background:var(--paper-raised); color:var(--ink); font-size:13px; font-weight:600; cursor:pointer; transition:all .15s ease;}
+  .btn:hover{border-color:var(--gold); color:#8A6A1E;}
+  .btn.primary{background:var(--navy-950); color:#fff; border-color:var(--navy-950);}
+  .btn.primary:hover{background:var(--navy-700); color:#fff;}
+  .btn.ghost{background:transparent; border-color:transparent; color:var(--ink-soft);}
+  .btn.ghost:hover{color:var(--ink);}
+  .btn.danger{color:var(--rust); border-color:var(--rust-bg);}
+  .btn.danger:hover{background:var(--rust-bg);}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .btn.sm{padding:6px 11px; font-size:12px;}
+  .toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:12px; flex-wrap:wrap;}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  .field{margin-bottom:12px;}
+  .field label{display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--ink); margin-bottom:5px;}
+  .field input, .field select{width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:7px; font-size:13.5px; background:#FCFBF7; color:var(--ink);}
+  .field input:focus, .field select:focus{outline:2px solid var(--gold-soft); border-color:var(--gold);}
+  .hint{font-size:11.5px; color:var(--ink-soft); margin-top:4px;}
+  .help{display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; border-radius:50%; background:var(--navy-800); color:#fff; font-size:10px; font-weight:700; cursor:help; position:relative; flex-shrink:0;}
+  .help .tip{display:none; position:absolute; left:20px; top:-6px; width:220px; z-index:20; background:var(--navy-950); color:#EDEAE0; font-weight:400; font-size:12px; line-height:1.4; padding:10px 12px; border-radius:8px; box-shadow:var(--shadow);}
+  .help:hover .tip{display:block;}
+
+  .kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:18px;}
+  .kpi-card{background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:16px 18px;}
+  .kpi-card .lbl{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); font-weight:600;}
+  .kpi-card .val{font-family:'Fraunces',serif; font-size:24px; margin-top:4px;}
+  .kpi-card .val.pos{color:var(--teal);} .kpi-card .val.neg{color:var(--rust);}
+
+  .option{display:flex; gap:14px; padding:14px; border:1.5px solid var(--line); border-radius:10px; margin-bottom:10px; cursor:pointer; transition:all .15s ease; background:var(--paper-raised);}
+  .option:hover{border-color:var(--gold-soft);}
+  .option.selected{border-color:var(--gold); background:var(--gold-bg);}
+  .option input{margin-top:3px; accent-color:var(--gold); flex-shrink:0;}
+  .option-body strong{display:block; font-size:14px; margin-bottom:2px;}
+  .option-body span{font-size:12.5px; color:var(--ink-soft); line-height:1.5;}
+
+  .note{font-size:12px; color:var(--ink-soft); background:#F2EFE6; border:1px dashed var(--line); border-radius:8px; padding:9px 12px; margin-top:12px;}
+  .banner-block{background:var(--rust-bg); border:1px solid var(--rust); color:#7A3520; padding:12px 15px; border-radius:10px; margin-bottom:16px; font-size:13px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;}
+  .banner-block.info{background:var(--blue-bg); border-color:var(--blue); color:#1E3A5C;}
+  .banner-block b{color:inherit;}
+
+  .rec-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .rec-card{background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:15px 17px;}
+  .rec-card .k{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--gold); background:var(--gold-bg); border-radius:5px; padding:2px 6px; margin-bottom:7px; font-weight:600;}
+  .rec-card p{font-size:12.5px; color:var(--ink-soft); margin:0; line-height:1.55;}
+  .rec-card h4{margin:0 0 5px; font-size:13.5px;}
+
+  .line-row{display:grid; grid-template-columns:2fr 1fr 1fr 28px; gap:8px; margin-bottom:7px; align-items:center;}
+  .line-row select, .line-row input{padding:7px 9px; border:1px solid var(--line); border-radius:6px; font-size:12.5px; background:#FCFBF7;}
+  .line-row .rm{cursor:pointer; color:var(--rust); background:none; border:none; font-size:15px; line-height:1;}
+  .line-head{display:grid; grid-template-columns:2fr 1fr 1fr 28px; gap:8px; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-bottom:6px; font-weight:600;}
+  .totals-row{display:grid; grid-template-columns:2fr 1fr 1fr 28px; gap:8px; font-weight:700; font-size:12.5px; padding-top:9px; margin-top:2px; border-top:1px solid var(--line);}
+  .totals-row .num-cell{text-align:right;}
+  .diff-ok{color:var(--teal);} .diff-bad{color:var(--rust);}
+
+  .comp-row{cursor:pointer;} .comp-row:hover{background:#FBFAF6;}
+  .comp-detail td{padding:10px 18px; background:#FBFAF6;}
+  .mini-table{width:100%; font-size:12px; border-collapse:collapse;}
+  .mini-table th{text-align:left; color:var(--ink-soft); font-weight:600; padding:4px 8px; font-size:10px; text-transform:uppercase;}
+  .mini-table td{padding:5px 8px; border-bottom:1px dashed var(--line);}
+  .tag-mini{font-size:9.5px; font-weight:700; padding:1px 6px; border-radius:99px;}
+
+  .diario-block{border:1px solid var(--line); border-radius:8px; margin-bottom:10px; overflow:hidden;}
+  .diario-head{background:#F2EFE6; padding:8px 12px; font-size:12.5px; display:flex; justify-content:space-between; gap:10px;}
+  .diario-head b{font-family:'IBM Plex Mono',monospace;}
+
+  @media (max-width:880px){
+    .app{flex-direction:column;} .sidebar{width:100%; height:auto; position:relative; flex-direction:row; overflow-x:auto;}
+    .brand,.sidebar-foot,.nav-group-label{display:none;} .nav-item{white-space:nowrap;}
+    .grid2,.grid3,.rec-grid,.kpi-grid{grid-template-columns:1fr;}
+    .view{padding:18px 16px 40px;} .topbar{padding:16px 16px 12px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="brand-mark">C</div>
+      <div><div class="name">ContaSim</div><div class="tag">Sistema contable</div></div>
+    </div>
+    <h2>Iniciar sesión</h2>
+    <p class="sub">Ingrese sus credenciales para acceder al sistema.</p>
+    <div class="login-error" id="login-error">Usuario o contraseña incorrectos.</div>
+    <div class="field"><label>Usuario</label><input type="text" id="login-user" placeholder="admin"></div>
+    <div class="field"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••"></div>
+    <button class="btn primary" style="width:100%; justify-content:center;" onclick="doLogin()">Ingresar</button>
+    <div class="login-demo">
+      Usuarios de demostración:<br>
+      <b>admin / admin123</b> — Administrador<br>
+      <b>contador / conta123</b> — Contador<br>
+      <b>cajero / caja123</b> — Cajero<br>
+      <b>auditor / audit123</b> — Auditor (solo lectura)
+    </div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div class="app" id="app-shell" style="display:none;">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">C</div>
+      <div class="brand-text"><div class="name">ContaSim</div><div class="tag">Sistema contable</div></div>
+    </div>
+
+    <div class="nav-group-label">Panel</div>
+    <div class="nav-item active" data-view="dashboard"><span class="ic">▤</span> Dashboard</div>
+
+    <div class="nav-group-label">Administración</div>
+    <div class="nav-item" data-view="usuarios"><span class="ic">◍</span> Gestión de usuarios</div>
+    <div class="nav-item" data-view="roles"><span class="ic">⛊</span> Roles</div>
+    <div class="nav-item" data-view="empresas"><span class="ic">▣</span> Gestión de empresas</div>
+
+    <div class="nav-group-label">Contabilidad</div>
+    <div class="nav-item" data-view="plancuentas"><span class="ic">☰</span> Plan contable</div>
+    <div class="nav-item" data-view="subdiarios"><span class="ic">▥</span> Subdiarios</div>
+    <div class="nav-item" data-view="tiposasiento"><span class="ic">◈</span> Tipos de asiento</div>
+    <div class="nav-item" data-view="periodos"><span class="ic">◷</span> Periodos contables</div>
+    <div class="nav-item" data-view="asientos"><span class="ic">✎</span> Registro de asientos</div>
+    <div class="nav-item" data-view="diario"><span class="ic">▤</span> Libro diario</div>
+    <div class="nav-item" data-view="mayor"><span class="ic">Σ</span> Libro mayor</div>
+    <div class="nav-item" data-view="balance"><span class="ic">⚖</span> Balance general</div>
+    <div class="nav-item" data-view="resultados"><span class="ic">△</span> Estado de resultados</div>
+
+    <div class="nav-group-label">Tesorería</div>
+    <div class="nav-item" data-view="caja"><span class="ic">$</span> Caja</div>
+    <div class="nav-item" data-view="bancos"><span class="ic">🏦</span> Bancos</div>
+
+    <div class="nav-group-label">Operaciones</div>
+    <div class="nav-item" data-view="compras"><span class="ic">↓</span> Compras</div>
+    <div class="nav-item" data-view="ventas"><span class="ic">↑</span> Ventas</div>
+
+    <div class="nav-group-label">Control</div>
+    <div class="nav-item" data-view="auditoria"><span class="ic">◎</span> Auditoría</div>
+    <div class="nav-item" data-view="reportes"><span class="ic">⇩</span> Reportes PDF</div>
+    <div class="nav-item" data-view="pendientes"><span class="ic">◌</span> Pendientes</div>
+
+    <div class="sidebar-foot">
+      <div class="sidebar-user"><div class="av" id="side-av">A</div>
+        <div class="who"><div class="n" id="side-name">—</div><div class="r" id="side-role">—</div></div>
+      </div>
+      <div class="storage-tag" id="storage-tag">Comprobando almacenamiento…</div>
+      <button class="logout-btn" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="topbar">
+      <div class="eyebrow" id="tb-eyebrow">Panel</div>
+      <h1 id="tb-title">Dashboard</h1>
+      <p id="tb-desc">Resumen general del sistema.</p>
+      <div class="switcher-bar">
+        <span class="meta">Empresa activa:</span>
+        <select id="global-empresa-select"></select>
+        <span class="meta" id="switcher-ruc"></span>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <div class="kpi-grid" id="kpi-grid"></div>
+      <div class="card">
+        <h3>Últimos asientos registrados</h3>
+        <table class="data"><thead><tr><th>N°</th><th>Fecha</th><th>Tipo</th><th>Glosa</th><th style="text-align:right;">Total</th></tr></thead>
+        <tbody id="dash-asientos"></tbody></table>
+      </div>
+    </section>
+
+    <!-- USUARIOS -->
+    <section class="view" id="view-usuarios">
+      <div id="usuarios-banner"></div>
+      <div class="card">
+        <h3>Usuarios del sistema</h3>
+        <table class="data"><thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th></th></tr></thead>
+        <tbody id="usuarios-body"></tbody></table>
+      </div>
+      <div class="card" id="usuarios-form-card">
+        <h3>Nuevo usuario</h3>
+        <div class="grid3">
+          <div class="field"><label>Nombre completo</label><input type="text" id="u-nombre"></div>
+          <div class="field"><label>Usuario</label><input type="text" id="u-usuario"></div>
+          <div class="field"><label>Contraseña</label><input type="text" id="u-pass"></div>
+        </div>
+        <div class="field" style="max-width:260px;"><label>Rol</label><select id="u-rol"></select></div>
+        <button class="btn primary" onclick="addUsuario()">＋ Crear usuario</button>
+        <div class="note" id="u-note" style="display:none;"></div>
+      </div>
+    </section>
+
+    <!-- ROLES -->
+    <section class="view" id="view-roles">
+      <div class="rec-grid" id="roles-grid"></div>
+    </section>
+
+    <!-- EMPRESAS -->
+    <section class="view" id="view-empresas">
+      <div id="empresas-banner"></div>
+      <div class="card">
+        <div class="toolbar"><h3 style="margin:0;">Empresas registradas</h3></div>
+        <table class="data"><thead><tr><th>Código</th><th>Empresa</th><th>RUC</th><th>Moneda</th><th>Cuentas</th><th>Asientos</th><th></th></tr></thead>
+        <tbody id="empresas-body"></tbody></table>
+      </div>
+      <div class="card" id="empresas-form-card">
+        <h3>Nueva empresa</h3>
+        <div class="grid2">
+          <div class="field"><label>Código <span class="help">?<span class="tip">Se autogenera si lo deja vacío.</span></span></label><input type="text" id="emp-codigo" maxlength="4" placeholder="Ej. 03"></div>
+          <div class="field"><label>Razón social</label><input type="text" id="emp-nombre" placeholder="Ej. Distribuidora del Sur E.I.R.L."></div>
+          <div class="field"><label>RUC</label><input type="text" id="emp-ruc" maxlength="11" placeholder="11 dígitos"></div>
+          <div class="field"><label>Moneda</label><select id="emp-moneda"><option value="PEN">PEN — Soles</option><option value="USD">USD — Dólares</option></select></div>
+        </div>
+        <label class="option" data-opt="estandar"><input type="radio" name="emp-plantilla" value="estandar" checked><span class="option-body"><strong>Plan contable estándar</strong><span>Crea la empresa con un plan de cuentas base de 16 cuentas, listo para operar.</span></span></label>
+        <label class="option" data-opt="vacio"><input type="radio" name="emp-plantilla" value="vacio"><span class="option-body"><strong>Plan contable vacío</strong><span>La empresa inicia sin cuentas; usted las agrega desde "Plan contable".</span></span></label>
+        <label class="option" data-opt="copiar"><input type="radio" name="emp-plantilla" value="copiar"><span class="option-body"><strong>Copiar de otra empresa</strong><span>Copia el plan de cuentas de una empresa existente.</span>
+          <div style="margin-top:8px;"><select class="field" id="emp-copiar-de" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:7px;"></select></div></span></label>
+        <div class="hint">Una vez creada, la empresa no podrá eliminarse.</div>
+        <button class="btn primary" style="margin-top:8px;" onclick="addEmpresa()">＋ Crear empresa</button>
+        <div class="note" id="emp-note" style="display:none;"></div>
+      </div>
+    </section>
+
+    <!-- PLAN CONTABLE -->
+    <section class="view" id="view-plancuentas">
+      <div class="card">
+        <div class="toolbar"><h3 style="margin:0;" id="pc-title">Plan contable</h3></div>
+        <table class="data"><thead><tr><th>Código</th><th>Descripción</th><th>Tipo</th><th>Nivel</th><th>Cuenta padre</th><th style="text-align:right;">Saldo</th></tr></thead>
+        <tbody id="pc-body"></tbody></table>
+        <div class="hint">Las cuentas de nivel 1 son grupos (no reciben movimientos); solo las de nivel 2 pueden usarse en asientos.</div>
+      </div>
+      <div class="card" id="pc-form-card">
+        <h3>Agregar cuenta</h3>
+        <div class="grid3">
+          <div class="field"><label>Código</label><input type="text" id="pc-codigo" placeholder="Ej. 106101"></div>
+          <div class="field"><label>Descripción</label><input type="text" id="pc-desc" placeholder="Ej. Fondos fijos"></div>
+          <div class="field"><label>Tipo</label><select id="pc-tipo"><option>Activo</option><option>Pasivo</option><option>Patrimonio</option><option>Ingreso</option><option>Gasto</option></select></div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>Nivel <span class="help">?<span class="tip">Nivel 1 = cuenta principal (grupo). Nivel 2 = cuenta de detalle, la que se usa en los asientos.</span></span></label>
+            <select id="pc-nivel" onchange="onNivelChange()"><option value="1">1 — Cuenta principal (grupo)</option><option value="2" selected>2 — Cuenta de detalle</option></select></div>
+          <div class="field" id="pc-padre-wrap"><label>Cuenta padre</label><select id="pc-padre"></select></div>
+          <div class="field"><label>Categoría especial (opcional)</label>
+            <select id="pc-subtipo"><option value="">Ninguna</option><option value="Caja">Caja</option><option value="Banco">Banco</option></select></div>
+        </div>
+        <button class="btn primary" onclick="addCuenta()">＋ Agregar cuenta</button>
+        <div class="note" id="pc-note" style="display:none;"></div>
+      </div>
+    </section>
+
+    <!-- REGISTRO DE ASIENTOS -->
+    <section class="view" id="view-asientos">
+      <div id="asientos-blocker"></div>
+      <div class="card" id="asientos-form-card">
+        <h3>Nuevo asiento contable</h3>
+        <div class="grid2">
+          <div class="field"><label>Fecha</label><input type="date" id="a-fecha"></div>
+          <div class="field"><label>Glosa</label><input type="text" id="a-glosa" placeholder="Ej. Compra de mercaderías al contado"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Tipo de asiento</label><select id="a-tipo"></select></div>
+          <div class="field"><label>Subdiario</label><select id="a-subdiario"></select></div>
+        </div>
+        <div class="line-head"><span>Cuenta</span><span>Debe</span><span>Haber</span><span></span></div>
+        <div id="lines-container"></div>
+        <button class="btn sm" onclick="addLine()" style="margin-top:4px;">＋ Agregar línea</button>
+        <div class="totals-row" id="totals-row"></div>
+        <div class="toolbar" style="margin-top:14px; margin-bottom:0;"><span></span>
+          <button class="btn primary" id="btn-save-asiento" onclick="saveAsiento()" disabled>Guardar asiento</button></div>
+      </div>
+      <div class="card">
+        <h3>Asientos registrados</h3>
+        <table class="data"><thead><tr><th>N°</th><th>Fecha</th><th>Tipo</th><th>Subdiario</th><th>Glosa</th><th style="text-align:right;">Total</th><th></th></tr></thead>
+        <tbody id="asientos-body"></tbody></table>
+        <div class="hint" id="asientos-empty" style="display:none;">Aún no hay asientos registrados.</div>
+      </div>
+    </section>
+
+    <!-- SUBDIARIOS -->
+    <section class="view" id="view-subdiarios">
+      <div class="card">
+        <h3 id="subdiarios-title">Subdiarios</h3>
+        <table class="data"><thead><tr><th>Código</th><th>Nombre</th><th>Asientos</th></tr></thead>
+        <tbody id="subdiarios-body"></tbody></table>
+      </div>
+      <div class="card" id="subdiarios-form-card">
+        <h3>Nuevo subdiario</h3>
+        <div class="grid2">
+          <div class="field"><label>Código</label><input type="text" id="sd-codigo" placeholder="Ej. 06" maxlength="4"></div>
+          <div class="field"><label>Nombre</label><input type="text" id="sd-nombre" placeholder="Ej. Ajustes"></div>
+        </div>
+        <button class="btn primary" onclick="addSubdiario()">＋ Agregar subdiario</button>
+      </div>
+    </section>
+
+    <!-- TIPOS DE ASIENTO -->
+    <section class="view" id="view-tiposasiento">
+      <div class="card">
+        <h3>Tipos de asiento</h3>
+        <table class="data"><thead><tr><th>Tipo</th><th>Descripción</th><th>Asientos registrados</th></tr></thead>
+        <tbody id="tipos-asiento-body"></tbody></table>
+        <div class="note">Estos tipos se asignan automáticamente en Compras, Ventas y Tesorería, y se seleccionan manualmente en el Registro de asientos.</div>
+      </div>
+    </section>
+
+    <!-- PERIODOS CONTABLES -->
+    <section class="view" id="view-periodos">
+      <div class="card">
+        <h3>Periodos contables — <span id="periodos-empresa-title"></span></h3>
+        <table class="data"><thead><tr><th>Año</th><th>Estado</th><th>Fecha de cierre</th><th></th></tr></thead>
+        <tbody id="periodos-body"></tbody></table>
+      </div>
+      <div class="card" id="periodos-form-card">
+        <h3>Nuevo periodo</h3>
+        <div class="field" style="max-width:160px;"><label>Año</label><input type="text" id="pe-anio" maxlength="4" placeholder="2027"></div>
+        <button class="btn primary" onclick="addPeriodo()">＋ Crear periodo</button>
+        <div class="note">Al cerrar un periodo se genera un asiento de cierre (tipo Cierre) que traslada el resultado de Ingresos y Gastos de ese año a Resultados acumulados, y ya no podrán registrarse asientos con fecha dentro de ese año.</div>
+      </div>
+    </section>
+
+    <!-- LIBRO DIARIO -->
+    <section class="view" id="view-diario">
+      <div class="card">
+        <div class="toolbar"><h3 style="margin:0;">Libro diario</h3>
+          <div style="display:flex; gap:8px;">
+            <select id="diario-subdiario-filter" onchange="renderDiario()" style="padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-size:12.5px;"></select>
+            <button class="btn sm" onclick="exportDiarioPDF()">⇩ Descargar PDF</button>
+          </div>
+        </div>
+        <div id="diario-body"></div>
+        <div class="hint" id="diario-empty" style="display:none;">No hay movimientos registrados.</div>
+      </div>
+    </section>
+
+    <!-- PENDIENTES -->
+    <section class="view" id="view-pendientes">
+      <div class="rec-grid">
+        <div class="rec-card"><span class="k">Seguridad</span><h4>Permisos granulares</h4><p>Matriz de permisos por rol y módulo; hoy solo hay restricciones fijas por rol.</p></div>
+        <div class="rec-card"><span class="k">Empresas</span><h4>Sucursales</h4><p>Registro de sucursales por empresa.</p></div>
+        <div class="rec-card"><span class="k">Plan contable</span><h4>Naturaleza y Estado</h4><p>Mostrar la naturaleza contable como campo visible y permitir inactivar cuentas.</p></div>
+        <div class="rec-card"><span class="k">Contabilidad</span><h4>Asientos recurrentes y de ajuste</h4><p>Plantillas de asientos repetitivos y asientos de ajuste diferenciados.</p></div>
+        <div class="rec-card"><span class="k">Documentos</span><h4>Tipos de documento</h4><p>Factura, boleta, nota de crédito/débito, recibo por honorarios, guía, voucher.</p></div>
+        <div class="rec-card"><span class="k">Monedas</span><h4>Multimoneda por asiento</h4><p>Soporte de EUR y tipo de cambio diario aplicado a cada asiento.</p></div>
+        <div class="rec-card"><span class="k">Centros de costo</span><h4>Administración, Producción, Ventas, Logística</h4><p>Distribución de gastos por centro de costo.</p></div>
+        <div class="rec-card"><span class="k">Maestros</span><h4>Clientes, Proveedores y Bancos</h4><p>Fichas completas con código, RUC, dirección, correo, teléfono y estado.</p></div>
+        <div class="rec-card"><span class="k">Reportes</span><h4>Balance de comprobación, Kardex y Flujo de caja</h4><p>Reportes adicionales a los ya disponibles (Diario, Mayor, Balance, Resultados).</p></div>
+        <div class="rec-card"><span class="k">Configuración</span><h4>Parámetros, series y numeración</h4><p>IGV editable, series de comprobantes y correlativos configurables.</p></div>
+        <div class="rec-card"><span class="k">Utilitarios</span><h4>Backup, restaurar y exportar a Excel</h4><p>Hoy solo hay exportación a PDF y guardado automático.</p></div>
+      </div>
+    </section>
+
+    <!-- LIBRO MAYOR -->
+    <section class="view" id="view-mayor">
+      <div class="card">
+        <div class="toolbar"><h3 style="margin:0;">Libro mayor por cuenta</h3>
+          <div style="display:flex; gap:8px;">
+            <select id="mayor-cuenta" style="max-width:300px;"></select>
+            <button class="btn sm" onclick="exportMayorPDF()">⇩ PDF</button>
+          </div>
+        </div>
+        <table class="data"><thead><tr><th>Fecha</th><th>Glosa</th><th style="text-align:right;">Debe</th><th style="text-align:right;">Haber</th><th style="text-align:right;">Saldo</th></tr></thead>
+        <tbody id="mayor-body"></tbody></table>
+        <div class="hint" id="mayor-empty" style="display:none;">Esta cuenta no tiene movimientos.</div>
+      </div>
+    </section>
+
+    <!-- BALANCE GENERAL -->
+    <section class="view" id="view-balance">
+      <div class="card">
+        <div class="toolbar"><h3 style="margin:0;">Balance general</h3>
+          <button class="btn sm" onclick="exportBalancePDF()">⇩ Descargar PDF</button></div>
+        <div id="balance-body"></div>
+      </div>
+    </section>
+
+    <!-- ESTADO DE RESULTADOS -->
+    <section class="view" id="view-resultados">
+      <div class="card">
+        <div class="toolbar"><h3 style="margin:0;">Estado de resultados</h3>
+          <button class="btn sm" onclick="exportResultadosPDF()">⇩ Descargar PDF</button></div>
+        <div id="resultados-body"></div>
+      </div>
+    </section>
+
+    <!-- CAJA -->
+    <section class="view" id="view-caja">
+      <div id="caja-content"></div>
+    </section>
+
+    <!-- BANCOS -->
+    <section class="view" id="view-bancos">
+      <div id="bancos-content"></div>
+    </section>
+
+    <!-- COMPRAS -->
+    <section class="view" id="view-compras">
+      <div id="compras-blocker"></div>
+      <div class="card" id="compras-form-card">
+        <h3>Registrar compra</h3>
+        <div class="grid2">
+          <div class="field"><label>Fecha</label><input type="date" id="cp-fecha"></div>
+          <div class="field"><label>Proveedor</label><input type="text" id="cp-proveedor" placeholder="Razón social del proveedor"></div>
+          <div class="field"><label>RUC proveedor</label><input type="text" id="cp-ruc" maxlength="11"></div>
+          <div class="field"><label>Descripción</label><input type="text" id="cp-desc" placeholder="Ej. Compra de mercadería"></div>
+          <div class="field"><label>Base imponible (S/)</label><input type="number" step="0.01" id="cp-base" oninput="updateCompraTotales()"></div>
+          <div class="field"><label>Forma de pago</label><select id="cp-forma" onchange="renderCompraPago()"><option value="credito">Crédito (cuentas por pagar)</option><option value="caja">Contado - Caja</option><option value="banco">Contado - Banco</option></select></div>
+        </div>
+        <div id="cp-pago-cuenta"></div>
+        <div class="hint" id="cp-totales">IGV (18%): S/ 0.00 · Total: S/ 0.00</div>
+        <button class="btn primary" style="margin-top:10px;" onclick="saveCompra()">＋ Registrar compra</button>
+      </div>
+      <div class="card">
+        <h3>Registro de compras</h3>
+        <table class="data"><thead><tr><th>N°</th><th>Fecha</th><th>Proveedor</th><th style="text-align:right;">Base</th><th style="text-align:right;">IGV</th><th style="text-align:right;">Total</th><th>Pago</th></tr></thead>
+        <tbody id="compras-body"></tbody></table>
+        <div class="hint" id="compras-empty" style="display:none;">Aún no hay compras registradas.</div>
+      </div>
+    </section>
+
+    <!-- VENTAS -->
+    <section class="view" id="view-ventas">
+      <div id="ventas-blocker"></div>
+      <div class="card" id="ventas-form-card">
+        <h3>Registrar venta</h3>
+        <div class="grid2">
+          <div class="field"><label>Fecha</label><input type="date" id="vt-fecha"></div>
+          <div class="field"><label>Cliente</label><input type="text" id="vt-cliente" placeholder="Razón social del cliente"></div>
+          <div class="field"><label>RUC/DNI cliente</label><input type="text" id="vt-ruc" maxlength="11"></div>
+          <div class="field"><label>Descripción</label><input type="text" id="vt-desc" placeholder="Ej. Venta de mercadería"></div>
+          <div class="field"><label>Base imponible (S/)</label><input type="number" step="0.01" id="vt-base" oninput="updateVentaTotales()"></div>
+          <div class="field"><label>Forma de cobro</label><select id="vt-forma" onchange="renderVentaCobro()"><option value="credito">Crédito (cuentas por cobrar)</option><option value="caja">Contado - Caja</option><option value="banco">Contado - Banco</option></select></div>
+        </div>
+        <div id="vt-cobro-cuenta"></div>
+        <div class="hint" id="vt-totales">IGV (18%): S/ 0.00 · Total: S/ 0.00</div>
+        <button class="btn primary" style="margin-top:10px;" onclick="saveVenta()">＋ Registrar venta</button>
+      </div>
+      <div class="card">
+        <h3>Registro de ventas</h3>
+        <table class="data"><thead><tr><th>N°</th><th>Fecha</th><th>Cliente</th><th style="text-align:right;">Base</th><th style="text-align:right;">IGV</th><th style="text-align:right;">Total</th><th>Cobro</th></tr></thead>
+        <tbody id="ventas-body"></tbody></table>
+        <div class="hint" id="ventas-empty" style="display:none;">Aún no hay ventas registradas.</div>
+      </div>
+    </section>
+
+    <!-- AUDITORÍA -->
+    <section class="view" id="view-auditoria">
+      <div class="card">
+        <div class="toolbar"><h3 style="margin:0;">Registro de auditoría</h3>
+          <input type="text" id="audit-filter" placeholder="Buscar por usuario o acción…" style="padding:7px 10px; border:1px solid var(--line); border-radius:7px; font-size:12.5px; width:240px;" oninput="renderAuditoria()"></div>
+        <table class="data"><thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead>
+        <tbody id="audit-body"></tbody></table>
+        <div class="hint" id="audit-empty" style="display:none;">No hay registros de auditoría.</div>
+      </div>
+    </section>
+
+    <!-- REPORTES PDF -->
+    <section class="view" id="view-reportes">
+      <div class="rec-grid">
+        <div class="rec-card"><span class="k">01</span><h4>Libro diario</h4><p>Detalle cronológico de todos los asientos contables de la empresa activa.</p>
+          <button class="btn sm" style="margin-top:10px;" onclick="exportDiarioPDF()">⇩ Descargar PDF</button></div>
+        <div class="rec-card"><span class="k">02</span><h4>Libro mayor</h4><p>Movimientos y saldo de la cuenta seleccionada en el módulo Libro mayor.</p>
+          <button class="btn sm" style="margin-top:10px;" onclick="goto('mayor')">Ir al módulo →</button></div>
+        <div class="rec-card"><span class="k">03</span><h4>Balance general</h4><p>Activo, Pasivo y Patrimonio de la empresa activa a la fecha.</p>
+          <button class="btn sm" style="margin-top:10px;" onclick="exportBalancePDF()">⇩ Descargar PDF</button></div>
+        <div class="rec-card"><span class="k">04</span><h4>Estado de resultados</h4><p>Ingresos, gastos y resultado del ejercicio de la empresa activa.</p>
+          <button class="btn sm" style="margin-top:10px;" onclick="exportResultadosPDF()">⇩ Descargar PDF</button></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ==========================================================================
+   UTILIDADES
+   ========================================================================== */
+function clone(x){ return JSON.parse(JSON.stringify(x)); }
+function fmt(n){ return (Math.round((n+Number.EPSILON)*100)/100).toLocaleString('es-PE',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function nowStr(){ return new Date().toLocaleString('es-PE'); }
+const IGV_RATE = 0.18;
+const NORMAL_DEBE = {Activo:true, Gasto:true, Pasivo:false, Patrimonio:false, Ingreso:false};
+
+const PLANTILLA_ESTANDAR = [
+  // --- Nivel 1: cuentas principales (grupos, no reciben movimientos) ---
+  {codigo:'10',desc:'Efectivo y equivalentes de efectivo',tipo:'Activo',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'12',desc:'Cuentas por cobrar comerciales',tipo:'Activo',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'20',desc:'Mercaderías',tipo:'Activo',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'40',desc:'Tributos por pagar',tipo:'Pasivo',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'41',desc:'Remuneraciones por pagar',tipo:'Pasivo',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'42',desc:'Cuentas por pagar comerciales',tipo:'Pasivo',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'50',desc:'Capital',tipo:'Patrimonio',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'59',desc:'Resultados acumulados',tipo:'Patrimonio',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'60',desc:'Compras',tipo:'Gasto',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'62',desc:'Gastos de personal',tipo:'Gasto',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'63',desc:'Gastos de servicios prestados por terceros',tipo:'Gasto',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'65',desc:'Otros gastos de gestión',tipo:'Gasto',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'69',desc:'Costo de ventas',tipo:'Gasto',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'70',desc:'Ventas',tipo:'Ingreso',subtipo:'',nivel:1,padre:'',postable:false},
+  {codigo:'75',desc:'Otros ingresos de gestión',tipo:'Ingreso',subtipo:'',nivel:1,padre:'',postable:false},
+  // --- Nivel 2: cuentas de detalle (postables, usadas en asientos) ---
+  {codigo:'101101',desc:'Caja M.N.',tipo:'Activo',subtipo:'Caja',nivel:2,padre:'10',postable:true},
+  {codigo:'104101',desc:'Banco Cuenta Corriente',tipo:'Activo',subtipo:'Banco',nivel:2,padre:'10',postable:true},
+  {codigo:'121101',desc:'Cuentas por cobrar comerciales - terceros',tipo:'Activo',subtipo:'',nivel:2,padre:'12',postable:true},
+  {codigo:'201101',desc:'Mercaderías',tipo:'Activo',subtipo:'',nivel:2,padre:'20',postable:true},
+  {codigo:'401101',desc:'IGV por pagar',tipo:'Pasivo',subtipo:'',nivel:2,padre:'40',postable:true},
+  {codigo:'411101',desc:'Remuneraciones por pagar',tipo:'Pasivo',subtipo:'',nivel:2,padre:'41',postable:true},
+  {codigo:'421101',desc:'Facturas por pagar - terceros',tipo:'Pasivo',subtipo:'',nivel:2,padre:'42',postable:true},
+  {codigo:'501101',desc:'Capital social',tipo:'Patrimonio',subtipo:'',nivel:2,padre:'50',postable:true},
+  {codigo:'591101',desc:'Resultados acumulados',tipo:'Patrimonio',subtipo:'',nivel:2,padre:'59',postable:true},
+  {codigo:'601101',desc:'Compras de mercaderías',tipo:'Gasto',subtipo:'',nivel:2,padre:'60',postable:true},
+  {codigo:'621101',desc:'Sueldos y salarios',tipo:'Gasto',subtipo:'',nivel:2,padre:'62',postable:true},
+  {codigo:'631101',desc:'Transporte y almacenamiento',tipo:'Gasto',subtipo:'',nivel:2,padre:'63',postable:true},
+  {codigo:'659101',desc:'Otros gastos de gestión',tipo:'Gasto',subtipo:'',nivel:2,padre:'65',postable:true},
+  {codigo:'691101',desc:'Costo de ventas',tipo:'Gasto',subtipo:'',nivel:2,padre:'69',postable:true},
+  {codigo:'701101',desc:'Ventas de mercaderías',tipo:'Ingreso',subtipo:'',nivel:2,padre:'70',postable:true},
+  {codigo:'759101',desc:'Otros ingresos de gestión',tipo:'Ingreso',subtipo:'',nivel:2,padre:'75',postable:true}
+];
+
+const DEFAULT_SUBDIARIOS = [
+  {codigo:'01',nombre:'Diario General'},
+  {codigo:'02',nombre:'Compras'},
+  {codigo:'03',nombre:'Ventas'},
+  {codigo:'04',nombre:'Tesorería (Caja / Bancos)'},
+  {codigo:'05',nombre:'Planillas'}
+];
+
+const TIPOS_ASIENTO = [
+  {id:'Apertura', desc:'Aporte o saldo inicial con el que la empresa inicia operaciones o un nuevo periodo.'},
+  {id:'Compras', desc:'Asientos generados por el registro de compras a proveedores.'},
+  {id:'Ventas', desc:'Asientos generados por el registro de ventas a clientes.'},
+  {id:'Tesorería', desc:'Movimientos de caja y bancos: ingresos y egresos de efectivo.'},
+  {id:'Planillas', desc:'Asientos relacionados con sueldos, beneficios sociales y aportes del personal.'},
+  {id:'Cierre', desc:'Asiento de cierre del ejercicio: traslada el resultado de Ingresos y Gastos a Resultados acumulados.'}
+];
+
+/* ==========================================================================
+   ESTADO GLOBAL (con persistencia)
+   ========================================================================== */
+const STATE_VERSION = 2;
+const DEFAULT_STATE = {
+  version: STATE_VERSION,
+  roles: [
+    {id:'admin', nombre:'Administrador', desc:'Acceso total: usuarios, empresas, configuración y todos los módulos contables.'},
+    {id:'contador', nombre:'Contador', desc:'Gestiona plan contable, asientos, libros, balance, resultados, compras y ventas.'},
+    {id:'cajero', nombre:'Cajero', desc:'Registra movimientos de caja, bancos, compras y ventas del día a día.'},
+    {id:'auditor', nombre:'Auditor', desc:'Acceso de solo lectura a todos los módulos y al registro de auditoría.'}
+  ],
+  usuarios: [
+    {id:'u1', nombre:'Administrador General', usuario:'admin', pass:'admin123', rolId:'admin'},
+    {id:'u2', nombre:'María Contadora', usuario:'contador', pass:'conta123', rolId:'contador'},
+    {id:'u3', nombre:'Juan Cajero', usuario:'cajero', pass:'caja123', rolId:'cajero'},
+    {id:'u4', nombre:'Ana Auditora', usuario:'auditor', pass:'audit123', rolId:'auditor'}
+  ],
+  empresas: {
+    e1: {id:'e1', codigo:'0001', nombre:'Comercial Andina S.A.C.', ruc:'20123456789', moneda:'PEN',
+         cuentas: clone(PLANTILLA_ESTANDAR),
+         subdiarios: clone(DEFAULT_SUBDIARIOS),
+         periodos: [{anio:'2026', estado:'Abierto', fechaCierre:null}],
+         asientos: [
+           {numero:'001', fecha:'2026-01-02', glosa:'Aporte de capital inicial', tipo:'Apertura', subdiario:'01', usuario:'Sistema',
+            lines:[{cuenta:'104101',debe:20000,haber:0},{cuenta:'501101',debe:0,haber:20000}]},
+           {numero:'002', fecha:'2026-01-05', glosa:'Compra de mercaderías al contado', tipo:'Compras', subdiario:'02', usuario:'Sistema',
+            lines:[{cuenta:'601101',debe:5000,haber:0},{cuenta:'401101',debe:900,haber:0},{cuenta:'104101',debe:0,haber:5900}],
+            meta:{tercero:'Distribuidora Central S.A.',ruc:'20456789123',base:5000,igv:900,total:5900,formaPago:'banco'}},
+           {numero:'003', fecha:'2026-01-10', glosa:'Venta de mercaderías al contado', tipo:'Ventas', subdiario:'03', usuario:'Sistema',
+            lines:[{cuenta:'101101',debe:2360,haber:0},{cuenta:'701101',debe:0,haber:2000},{cuenta:'401101',debe:0,haber:360}],
+            meta:{tercero:'Bodega Los Álamos E.I.R.L.',ruc:'20998877665',base:2000,igv:360,total:2360,formaPago:'caja'}}
+         ]},
+    e2: {id:'e2', codigo:'0002', nombre:'Distribuidora del Sur E.I.R.L.', ruc:'20998877001', moneda:'PEN',
+         cuentas: clone(PLANTILLA_ESTANDAR),
+         subdiarios: clone(DEFAULT_SUBDIARIOS),
+         periodos: [{anio:'2026', estado:'Abierto', fechaCierre:null}],
+         asientos: []}
+  },
+  activeEmpresaId: 'e1',
+  session: { usuarioId: null },
+  auditoria: []
+};
+
+let state = clone(DEFAULT_STATE);
+let storageAvailable = false;
+
+async function loadState(){
+  try{
+    if(window.storage){
+      storageAvailable = true;
+      const res = await window.storage.get('contasim-state');
+      if(res && res.value){
+        const saved = JSON.parse(res.value);
+        if(saved.version === STATE_VERSION){
+          state = Object.assign(clone(DEFAULT_STATE), saved);
+        } else {
+          state = clone(DEFAULT_STATE); // esquema anterior incompatible: se reinicia con datos de ejemplo
+        }
+      }
+    }
+  }catch(e){ /* no hay estado guardado todavía, se usa el estado por defecto */ }
+  const tag = document.getElementById('storage-tag');
+  if(storageAvailable){ tag.textContent = '● Guardado automático activo'; tag.className='storage-tag ok'; }
+  else { tag.textContent = '○ Sin almacenamiento (modo temporal)'; tag.className='storage-tag'; }
+}
+async function saveState(){
+  if(!storageAvailable) return;
+  try{ await window.storage.set('contasim-state', JSON.stringify(state)); }catch(e){ /* ignorar */ }
+}
+
+function activeEmpresa(){ return state.empresas[state.activeEmpresaId]; }
+function empresaList(){ return Object.values(state.empresas).sort((a,b)=>a.codigo.localeCompare(b.codigo)); }
+function currentUser(){ return state.usuarios.find(u=>u.id===state.session.usuarioId); }
+function currentRole(){ const u=currentUser(); return u ? state.roles.find(r=>r.id===u.rolId) : null; }
+function canEdit(){ const r=currentRole(); return r && r.id!=='auditor'; }
+function canManageUsers(){ const r=currentRole(); return r && r.id==='admin'; }
+function canManageEmpresas(){ const r=currentRole(); return r && (r.id==='admin'||r.id==='contador'); }
+
+function periodoDeFecha(empresa, fecha){
+  const anio = (fecha||todayStr()).slice(0,4);
+  let p = empresa.periodos.find(x=>x.anio===anio);
+  if(!p){ p = {anio, estado:'Abierto', fechaCierre:null}; empresa.periodos.push(p); }
+  return p;
+}
+function periodoAbierto(empresa, fecha){ return periodoDeFecha(empresa, fecha).estado==='Abierto'; }
+
+function logAudit(accion, detalle){
+  state.auditoria.unshift({fecha:nowStr(), usuario: currentUser()?currentUser().nombre:'Sistema', accion, detalle});
+  saveState();
+}
+
+/* ==========================================================================
+   LOGIN / LOGOUT
+   ========================================================================== */
+async function doLogin(){
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const found = state.usuarios.find(x=>x.usuario===u && x.pass===p);
+  const err = document.getElementById('login-error');
+  if(!found){ err.style.display='block'; return; }
+  err.style.display='none';
+  state.session.usuarioId = found.id;
+  await saveState();
+  logAudit('Inicio de sesión', found.nombre+' ingresó al sistema');
+  showApp();
+}
+function doLogout(){
+  logAudit('Cierre de sesión', (currentUser()||{}).nombre+' cerró sesión');
+  state.session.usuarioId = null;
+  saveState();
+  document.getElementById('app-shell').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-user').value=''; document.getElementById('login-pass').value='';
+}
+function showApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-shell').style.display='flex';
+  const u = currentUser(), r = currentRole();
+  document.getElementById('side-name').textContent = u.nombre;
+  document.getElementById('side-role').textContent = r.nombre;
+  document.getElementById('side-av').textContent = u.nombre.charAt(0).toUpperCase();
+  applyRoleVisibility();
+  renderAll();
+}
+function applyRoleVisibility(){
+  const admin = canManageUsers();
+  document.querySelector('.nav-item[data-view="usuarios"]').style.display = admin ? 'flex' : 'none';
+  document.querySelector('.nav-item[data-view="roles"]').style.display = admin ? 'flex' : 'none';
+}
+
+/* ==========================================================================
+   NAVEGACIÓN
+   ========================================================================== */
+const topbarInfo = {
+  dashboard:["Panel","Dashboard","Resumen general de la empresa activa."],
+  usuarios:["Administración","Gestión de usuarios","Cree y administre las cuentas de acceso al sistema."],
+  roles:["Administración","Roles","Roles disponibles y sus permisos generales."],
+  empresas:["Administración","Gestión de empresas","Registre las empresas que administrará el sistema."],
+  plancuentas:["Contabilidad","Plan contable","Cuentas contables de la empresa activa, organizadas por nivel y cuenta padre."],
+  subdiarios:["Contabilidad","Subdiarios","Catálogo de subdiarios usados para clasificar los asientos."],
+  tiposasiento:["Contabilidad","Tipos de asiento","Tipos de asiento definidos para el sistema."],
+  periodos:["Contabilidad","Periodos contables","Ejercicios de la empresa activa y su estado (abierto/cerrado)."],
+  asientos:["Contabilidad","Registro de asientos","Registre asientos contables con partida doble."],
+  diario:["Contabilidad","Libro diario","Detalle cronológico de todos los asientos."],
+  mayor:["Contabilidad","Libro mayor","Movimientos y saldo por cuenta."],
+  balance:["Contabilidad","Balance general","Situación financiera de la empresa activa."],
+  resultados:["Contabilidad","Estado de resultados","Ingresos, gastos y resultado del ejercicio."],
+  caja:["Tesorería","Caja","Movimientos de las cuentas de caja."],
+  bancos:["Tesorería","Bancos","Movimientos de las cuentas bancarias."],
+  compras:["Operaciones","Compras","Registro de compras y generación automática del asiento."],
+  ventas:["Operaciones","Ventas","Registro de ventas y generación automática del asiento."],
+  auditoria:["Control","Auditoría","Historial de acciones realizadas en el sistema."],
+  reportes:["Control","Reportes PDF","Descargue los libros y estados financieros en PDF."],
+  pendientes:["Control","Pendientes","Módulos fuera del alcance de esta entrega, documentados para una siguiente iteración."]
+};
+function goto(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
+  const [eyebrow,title,desc] = topbarInfo[view];
+  document.getElementById('tb-eyebrow').textContent = eyebrow;
+  document.getElementById('tb-title').textContent = title;
+  document.getElementById('tb-desc').textContent = desc;
+  window.scrollTo({top:0,behavior:'smooth'});
+  const renderers = {usuarios:renderUsuarios, roles:renderRoles, empresas:renderEmpresas, plancuentas:renderPlanCuentas,
+    subdiarios:renderSubdiarios, tiposasiento:renderTiposAsiento, periodos:renderPeriodos,
+    asientos:renderAsientos, diario:renderDiario, mayor:renderMayor, balance:renderBalance, resultados:renderResultados,
+    caja:renderCaja, bancos:renderBancos, compras:renderCompras, ventas:renderVentas, auditoria:renderAuditoria, dashboard:renderDashboard};
+  if(renderers[view]) renderers[view]();
+}
+document.querySelectorAll('.nav-item').forEach(item=>item.addEventListener('click', ()=>goto(item.dataset.view)));
+
+/* ==========================================================================
+   SWITCHER DE EMPRESA
+   ========================================================================== */
+function renderSwitcher(){
+  const sel = document.getElementById('global-empresa-select');
+  sel.innerHTML = empresaList().map(e=>`<option value="${e.id}" ${e.id===state.activeEmpresaId?'selected':''}>${e.codigo} — ${e.nombre}</option>`).join('');
+  document.getElementById('switcher-ruc').textContent = 'RUC ' + activeEmpresa().ruc;
+}
+document.getElementById('global-empresa-select').addEventListener('change', function(){
+  state.activeEmpresaId = this.value; saveState(); renderAll();
+});
+
+/* ==========================================================================
+   CÁLCULOS CONTABLES COMPARTIDOS
+   ========================================================================== */
+function saldoCuenta(empresa, codigo, tipo){
+  let debe=0, haber=0;
+  empresa.asientos.forEach(a=>a.lines.forEach(l=>{ if(l.cuenta===codigo){ debe+=l.debe; haber+=l.haber; } }));
+  return {debe, haber, saldo: NORMAL_DEBE[tipo] ? (debe-haber) : (haber-debe)};
+}
+function computeSaldos(empresa){
+  return empresa.cuentas.filter(a=>a.postable).map(a=>Object.assign({}, a, saldoCuenta(empresa, a.codigo, a.tipo)));
+}
+function accountOptions(empresa, selected, filterFn){
+  let cuentas = empresa.cuentas.filter(a=>a.postable);
+  if(filterFn) cuentas = cuentas.filter(filterFn);
+  return `<option value="">— Cuenta —</option>` + cuentas.map(a=>`<option value="${a.codigo}" ${selected===a.codigo?'selected':''}>${a.codigo} — ${a.desc}</option>`).join('');
+}
+function nextNumero(empresa){ return String(empresa.asientos.length+1).padStart(3,'0'); }
+function addAsientoRaw(empresa, {fecha, glosa, tipo, subdiario, lines, meta}){
+  const numero = nextNumero(empresa);
+  empresa.asientos.push({numero, fecha: fecha||todayStr(), glosa, tipo, subdiario: subdiario||'01', usuario: currentUser()?currentUser().nombre:'Sistema', lines, meta: meta||null});
+  saveState();
+  return numero;
+}
+
+/* ==========================================================================
+   DASHBOARD
+   ========================================================================== */
+function renderDashboard(){
+  const e = activeEmpresa();
+  const saldos = computeSaldos(e);
+  const totalCaja = saldos.filter(s=>s.subtipo==='Caja').reduce((s,a)=>s+a.saldo,0);
+  const totalBanco = saldos.filter(s=>s.subtipo==='Banco').reduce((s,a)=>s+a.saldo,0);
+  const ingresos = saldos.filter(s=>s.tipo==='Ingreso').reduce((s,a)=>s+a.saldo,0);
+  const gastos = saldos.filter(s=>s.tipo==='Gasto').reduce((s,a)=>s+a.saldo,0);
+  const utilidad = ingresos-gastos;
+  const anioActual = todayStr().slice(0,4);
+  const periodoActual = e.periodos.find(p=>p.anio===anioActual);
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi-card"><div class="lbl">Empresas registradas</div><div class="val">${empresaList().length}</div></div>
+    <div class="kpi-card"><div class="lbl">Asientos (empresa activa)</div><div class="val">${e.asientos.length}</div></div>
+    <div class="kpi-card"><div class="lbl">Caja + Bancos</div><div class="val">S/ ${fmt(totalCaja+totalBanco)}</div></div>
+    <div class="kpi-card"><div class="lbl">Resultado del ejercicio</div><div class="val ${utilidad>=0?'pos':'neg'}">S/ ${fmt(utilidad)}</div></div>
+    <div class="kpi-card"><div class="lbl">Periodo ${anioActual}</div><div class="val" style="font-size:16px;"><span class="pill ${periodoActual&&periodoActual.estado==='Abierto'?'teal':'rust'}">${periodoActual?periodoActual.estado:'Sin definir'}</span></div></div>`;
+  const last = e.asientos.slice(-6).reverse();
+  document.getElementById('dash-asientos').innerHTML = last.length ? last.map(a=>{
+    const total = a.lines.reduce((s,l)=>s+l.debe,0);
+    return `<tr><td class="mono">${a.numero}</td><td>${a.fecha}</td><td><span class="pill blue">${a.tipo}</span></td><td>${a.glosa}</td><td class="num-cell">S/ ${fmt(total)}</td></tr>`;
+  }).join('') : `<tr><td colspan="5" class="hint">Aún no hay asientos en esta empresa.</td></tr>`;
+}
+
+/* ==========================================================================
+   USUARIOS Y ROLES
+   ========================================================================== */
+function renderRoles(){
+  document.getElementById('roles-grid').innerHTML = state.roles.map(r=>{
+    const count = state.usuarios.filter(u=>u.rolId===r.id).length;
+    return `<div class="rec-card"><span class="k">${r.id.toUpperCase()}</span><h4>${r.nombre}</h4><p>${r.desc}</p>
+      <div class="hint" style="margin-top:8px;">${count} usuario(s) con este rol</div></div>`;
+  }).join('');
+}
+function renderUsuarios(){
+  const banner = document.getElementById('usuarios-banner');
+  const formCard = document.getElementById('usuarios-form-card');
+  if(!canManageUsers()){
+    banner.innerHTML = `<div class="banner-block info"><span>Solo el rol <b>Administrador</b> puede gestionar usuarios.</span></div>`;
+    formCard.style.display='none';
+  } else { banner.innerHTML=''; formCard.style.display='block';
+    document.getElementById('u-rol').innerHTML = state.roles.map(r=>`<option value="${r.id}">${r.nombre}</option>`).join('');
+  }
+  document.getElementById('usuarios-body').innerHTML = state.usuarios.map(u=>{
+    const rol = state.roles.find(r=>r.id===u.rolId);
+    return `<tr><td class="mono">${u.usuario}</td><td>${u.nombre}</td><td><span class="pill gold">${rol?rol.nombre:'—'}</span></td>
+      <td>${canManageUsers() && u.id!==currentUser().id ? `<button class="btn sm danger" onclick="deleteUsuario('${u.id}')">Eliminar</button>` : ''}</td></tr>`;
+  }).join('');
+}
+function addUsuario(){
+  if(!canManageUsers()) return;
+  const nombre = document.getElementById('u-nombre').value.trim();
+  const usuario = document.getElementById('u-usuario').value.trim();
+  const pass = document.getElementById('u-pass').value.trim();
+  const rolId = document.getElementById('u-rol').value;
+  const note = document.getElementById('u-note');
+  if(!nombre||!usuario||!pass){ note.style.display='block'; note.textContent='Complete todos los campos.'; return; }
+  if(state.usuarios.some(u=>u.usuario===usuario)){ note.style.display='block'; note.textContent='Ese usuario ya existe.'; return; }
+  const id = 'u'+Date.now();
+  state.usuarios.push({id, nombre, usuario, pass, rolId});
+  logAudit('Crear usuario', `Se creó el usuario ${usuario} (${rolId})`);
+  note.style.display='block'; note.textContent='✓ Usuario creado.';
+  ['u-nombre','u-usuario','u-pass'].forEach(id=>document.getElementById(id).value='');
+  renderUsuarios(); renderRoles(); saveState();
+}
+function deleteUsuario(id){
+  if(!canManageUsers()) return;
+  const u = state.usuarios.find(x=>x.id===id);
+  state.usuarios = state.usuarios.filter(x=>x.id!==id);
+  logAudit('Eliminar usuario', `Se eliminó el usuario ${u?u.usuario:id}`);
+  renderUsuarios(); renderRoles(); saveState();
+}
+
+/* ==========================================================================
+   EMPRESAS
+   ========================================================================== */
+function renderEmpresas(){
+  const banner = document.getElementById('empresas-banner');
+  const formCard = document.getElementById('empresas-form-card');
+  if(!canManageEmpresas()){
+    banner.innerHTML = `<div class="banner-block info"><span>Su rol no permite crear nuevas empresas.</span></div>`;
+    formCard.style.display='none';
+  } else {
+    banner.innerHTML=''; formCard.style.display='block';
+    document.getElementById('emp-copiar-de').innerHTML = empresaList().map(e=>`<option value="${e.id}">${e.codigo} — ${e.nombre}</option>`).join('');
+  }
+  document.getElementById('empresas-body').innerHTML = empresaList().map(e=>`
+    <tr><td class="mono">${e.codigo}</td><td>${e.nombre} ${e.id===state.activeEmpresaId?'<span class="pill teal">activa</span>':''}</td>
+    <td class="mono">${e.ruc}</td><td>${e.moneda}</td><td class="mono">${e.cuentas.length}</td><td class="mono">${e.asientos.length}</td>
+    <td><button class="btn sm ghost" onclick="setActiveEmpresa('${e.id}')">Usar</button></td></tr>`).join('');
+}
+function setActiveEmpresa(id){ state.activeEmpresaId = id; saveState(); renderAll(); }
+function addEmpresa(){
+  if(!canManageEmpresas()) return;
+  const codigo = document.getElementById('emp-codigo').value.trim() || String(empresaList().length+1).padStart(4,'0');
+  const nombre = document.getElementById('emp-nombre').value.trim();
+  const ruc = document.getElementById('emp-ruc').value.trim();
+  const moneda = document.getElementById('emp-moneda').value;
+  const plantilla = (document.querySelector('input[name="emp-plantilla"]:checked')||{}).value || 'estandar';
+  const note = document.getElementById('emp-note');
+  if(!nombre || !ruc){ note.style.display='block'; note.textContent='Complete razón social y RUC.'; return; }
+  let cuentas;
+  if(plantilla==='vacio') cuentas = [];
+  else if(plantilla==='copiar') cuentas = clone(state.empresas[document.getElementById('emp-copiar-de').value].cuentas);
+  else cuentas = clone(PLANTILLA_ESTANDAR);
+  const id = 'e'+Date.now();
+  state.empresas[id] = {id, codigo, nombre, ruc, moneda, cuentas, asientos:[],
+    subdiarios: clone(DEFAULT_SUBDIARIOS),
+    periodos: [{anio: todayStr().slice(0,4), estado:'Abierto', fechaCierre:null}]};
+  state.activeEmpresaId = id;
+  logAudit('Crear empresa', `Se creó la empresa ${codigo} — ${nombre}`);
+  note.style.display='block'; note.textContent='✓ Empresa creada y establecida como activa.';
+  ['emp-codigo','emp-nombre','emp-ruc'].forEach(id=>document.getElementById(id).value='');
+  renderAll();
+}
+
+/* ==========================================================================
+   PLAN CONTABLE
+   ========================================================================== */
+function renderPlanCuentas(){
+  const e = activeEmpresa();
+  document.getElementById('pc-title').textContent = `Plan contable — ${e.codigo} ${e.nombre}`;
+  const grupos = e.cuentas.filter(a=>a.nivel===1).sort((a,b)=>a.codigo.localeCompare(b.codigo));
+  let rows = '';
+  grupos.forEach(g=>{
+    const hijos = e.cuentas.filter(a=>a.padre===g.codigo).sort((a,b)=>a.codigo.localeCompare(b.codigo));
+    const rollup = hijos.reduce((s,h)=>s+saldoCuenta(e,h.codigo,h.tipo).saldo,0);
+    rows += `<tr style="background:#F2EFE6;"><td class="mono">${g.codigo}</td><td><b>${g.desc}</b></td><td>${g.tipo}</td><td class="mono">1</td><td>—</td><td class="num-cell"><b>S/ ${fmt(rollup)}</b></td></tr>`;
+    hijos.forEach(h=>{
+      const s = saldoCuenta(e,h.codigo,h.tipo);
+      rows += `<tr><td class="mono" style="padding-left:24px;">${h.codigo}</td><td style="padding-left:14px;">${h.desc}${h.subtipo?` <span class="pill blue">${h.subtipo}</span>`:''}</td><td>${h.tipo}</td><td class="mono">2</td><td class="mono">${h.padre}</td><td class="num-cell">S/ ${fmt(s.saldo)}</td></tr>`;
+    });
+  });
+  const huerfanas = e.cuentas.filter(a=>a.nivel===2 && !grupos.some(g=>g.codigo===a.padre));
+  huerfanas.forEach(h=>{
+    const s = saldoCuenta(e,h.codigo,h.tipo);
+    rows += `<tr><td class="mono">${h.codigo}</td><td>${h.desc}${h.subtipo?` <span class="pill blue">${h.subtipo}</span>`:''}</td><td>${h.tipo}</td><td class="mono">2</td><td class="mono">${h.padre||'—'}</td><td class="num-cell">S/ ${fmt(s.saldo)}</td></tr>`;
+  });
+  document.getElementById('pc-body').innerHTML = rows || `<tr><td colspan="6" class="hint">Este plan de cuentas está vacío.</td></tr>`;
+  document.getElementById('pc-form-card').style.display = canEdit() ? 'block' : 'none';
+  if(canEdit()){ populatePadreSelect(); onNivelChange(); }
+}
+function populatePadreSelect(){
+  const e = activeEmpresa();
+  const grupos = e.cuentas.filter(a=>a.nivel===1).sort((a,b)=>a.codigo.localeCompare(b.codigo));
+  document.getElementById('pc-padre').innerHTML = grupos.length ? grupos.map(g=>`<option value="${g.codigo}">${g.codigo} — ${g.desc}</option>`).join('') : `<option value="">— Cree primero una cuenta de nivel 1 —</option>`;
+}
+function onNivelChange(){
+  const nivel = document.getElementById('pc-nivel').value;
+  document.getElementById('pc-padre-wrap').style.display = nivel==='2' ? 'block' : 'none';
+}
+function addCuenta(){
+  if(!canEdit()) return;
+  const e = activeEmpresa();
+  const codigo = document.getElementById('pc-codigo').value.trim();
+  const desc = document.getElementById('pc-desc').value.trim();
+  const tipo = document.getElementById('pc-tipo').value;
+  const nivel = parseInt(document.getElementById('pc-nivel').value);
+  const padre = nivel===2 ? document.getElementById('pc-padre').value : '';
+  const subtipo = document.getElementById('pc-subtipo').value;
+  const note = document.getElementById('pc-note');
+  if(!codigo||!desc){ note.style.display='block'; note.textContent='Complete código y descripción.'; return; }
+  if(e.cuentas.some(a=>a.codigo===codigo)){ note.style.display='block'; note.textContent='Ese código ya existe.'; return; }
+  if(nivel===2 && !padre){ note.style.display='block'; note.textContent='Seleccione la cuenta padre (cree antes una cuenta de nivel 1).'; return; }
+  e.cuentas.push({codigo, desc, tipo, subtipo: nivel===2?subtipo:'', nivel, padre, postable: nivel===2});
+  logAudit('Agregar cuenta', `${codigo} — ${desc} (nivel ${nivel}) en ${e.nombre}`);
+  note.style.display='block'; note.textContent='✓ Cuenta agregada.';
+  document.getElementById('pc-codigo').value=''; document.getElementById('pc-desc').value='';
+  renderPlanCuentas(); renderAsientos(); renderMayor(); renderDashboard(); saveState();
+}
+
+/* ==========================================================================
+   SUBDIARIOS
+   ========================================================================== */
+function renderSubdiarios(){
+  const e = activeEmpresa();
+  document.getElementById('subdiarios-title').textContent = `Subdiarios — ${e.codigo} ${e.nombre}`;
+  document.getElementById('subdiarios-body').innerHTML = e.subdiarios.map(s=>{
+    const count = e.asientos.filter(a=>a.subdiario===s.codigo).length;
+    return `<tr><td class="mono">${s.codigo}</td><td>${s.nombre}</td><td class="mono">${count}</td></tr>`;
+  }).join('');
+  document.getElementById('subdiarios-form-card').style.display = canEdit() ? 'block' : 'none';
+}
+function addSubdiario(){
+  if(!canEdit()) return;
+  const e = activeEmpresa();
+  const codigo = document.getElementById('sd-codigo').value.trim();
+  const nombre = document.getElementById('sd-nombre').value.trim();
+  if(!codigo||!nombre) return;
+  if(e.subdiarios.some(s=>s.codigo===codigo)) return;
+  e.subdiarios.push({codigo, nombre});
+  logAudit('Crear subdiario', `${codigo} — ${nombre} en ${e.nombre}`);
+  document.getElementById('sd-codigo').value=''; document.getElementById('sd-nombre').value='';
+  renderSubdiarios(); saveState();
+}
+
+/* ==========================================================================
+   TIPOS DE ASIENTO
+   ========================================================================== */
+function renderTiposAsiento(){
+  const e = activeEmpresa();
+  document.getElementById('tipos-asiento-body').innerHTML = TIPOS_ASIENTO.map(t=>{
+    const count = e.asientos.filter(a=>a.tipo===t.id).length;
+    return `<tr><td><span class="pill blue">${t.id}</span></td><td>${t.desc}</td><td class="mono">${count}</td></tr>`;
+  }).join('');
+}
+
+/* ==========================================================================
+   PERIODOS CONTABLES
+   ========================================================================== */
+function renderPeriodos(){
+  const e = activeEmpresa();
+  document.getElementById('periodos-empresa-title').textContent = `${e.codigo} ${e.nombre}`;
+  document.getElementById('periodos-body').innerHTML = e.periodos.slice().sort((a,b)=>a.anio.localeCompare(b.anio)).map(p=>`
+    <tr><td class="mono">${p.anio}</td><td><span class="pill ${p.estado==='Abierto'?'teal':'rust'}">${p.estado}</span></td><td class="mono">${p.fechaCierre||'—'}</td>
+    <td>${p.estado==='Abierto' && canEdit() ? `<button class="btn sm danger" onclick="cerrarPeriodo('${p.anio}')">Cerrar periodo</button>` : ''}</td></tr>`).join('');
+  document.getElementById('periodos-form-card').style.display = canEdit() ? 'block' : 'none';
+}
+function addPeriodo(){
+  if(!canEdit()) return;
+  const e = activeEmpresa();
+  const anio = document.getElementById('pe-anio').value.trim();
+  if(!/^\d{4}$/.test(anio)) return;
+  if(e.periodos.some(p=>p.anio===anio)) return;
+  e.periodos.push({anio, estado:'Abierto', fechaCierre:null});
+  logAudit('Crear periodo', `Periodo ${anio} creado en ${e.nombre}`);
+  document.getElementById('pe-anio').value='';
+  renderPeriodos(); saveState();
+}
+function cerrarPeriodo(anio){
+  if(!canEdit()) return;
+  const e = activeEmpresa();
+  const p = e.periodos.find(x=>x.anio===anio);
+  if(!p || p.estado==='Cerrado') return;
+  const asientosAnio = e.asientos.filter(a=>a.fecha.slice(0,4)===anio);
+  const cuentasIG = e.cuentas.filter(a=>a.postable && (a.tipo==='Ingreso'||a.tipo==='Gasto'));
+  let lines = []; let resultado = 0;
+  cuentasIG.forEach(c=>{
+    let debe=0, haber=0;
+    asientosAnio.forEach(a=>a.lines.forEach(l=>{ if(l.cuenta===c.codigo){ debe+=l.debe; haber+=l.haber; } }));
+    if(debe===0 && haber===0) return;
+    if(c.tipo==='Ingreso'){
+      const saldo = haber-debe;
+      if(saldo!==0){ lines.push({cuenta:c.codigo, debe:saldo>0?saldo:0, haber:saldo<0?-saldo:0}); resultado += saldo; }
+    } else {
+      const saldo = debe-haber;
+      if(saldo!==0){ lines.push({cuenta:c.codigo, debe:saldo<0?-saldo:0, haber:saldo>0?saldo:0}); resultado -= saldo; }
+    }
+  });
+  const cuentaResultados = e.cuentas.find(a=>a.codigo==='591101') ? '591101' : null;
+  if(cuentaResultados && resultado!==0){
+    if(resultado>0) lines.push({cuenta:cuentaResultados, debe:0, haber:resultado});
+    else lines.push({cuenta:cuentaResultados, debe:-resultado, haber:0});
+  }
+  if(lines.length){
+    addAsientoRaw(e, {fecha: anio+'-12-31', glosa:'Asiento de cierre del ejercicio '+anio, tipo:'Cierre', subdiario:'01', lines});
+  }
+  p.estado = 'Cerrado'; p.fechaCierre = todayStr();
+  logAudit('Cerrar periodo', `Periodo ${anio} cerrado en ${e.nombre} (resultado: S/ ${fmt(resultado)})`);
+  saveState();
+  renderPeriodos(); renderDashboard(); renderAsientos(); renderDiario(); renderBalance(); renderResultados(); renderPlanCuentas();
+}
+
+/* ==========================================================================
+   REGISTRO DE ASIENTOS
+   ========================================================================== */
+let draftLines = [{cuenta:'',debe:'',haber:''},{cuenta:'',debe:'',haber:''}];
+function renderAsientos(){
+  const e = activeEmpresa();
+  const blocker = document.getElementById('asientos-blocker');
+  const formCard = document.getElementById('asientos-form-card');
+  const hayPostables = e.cuentas.some(a=>a.postable);
+  if(!canEdit()){
+    blocker.innerHTML = `<div class="banner-block info"><span>Su rol tiene acceso de solo lectura a los asientos.</span></div>`;
+    formCard.style.display='none';
+  } else if(!hayPostables){
+    blocker.innerHTML = `<div class="banner-block"><span><b>Sin cuentas de detalle:</b> agregue cuentas de nivel 2 al plan contable antes de registrar asientos.</span>
+      <button class="btn sm primary" onclick="goto('plancuentas')">Ir a plan contable</button></div>`;
+    formCard.style.display='none';
+  } else {
+    blocker.innerHTML=''; formCard.style.display='block';
+    document.getElementById('a-tipo').innerHTML = TIPOS_ASIENTO.map(t=>`<option value="${t.id}">${t.id}</option>`).join('');
+    document.getElementById('a-subdiario').innerHTML = e.subdiarios.map(s=>`<option value="${s.codigo}">${s.codigo} — ${s.nombre}</option>`).join('');
+  }
+  renderDraftLines();
+  const body = document.getElementById('asientos-body');
+  const empty = document.getElementById('asientos-empty');
+  if(!e.asientos.length){ body.innerHTML=''; empty.style.display='block'; }
+  else{
+    empty.style.display='none';
+    body.innerHTML = e.asientos.slice().reverse().map(a=>{
+      const total = a.lines.reduce((s,l)=>s+l.debe,0);
+      const sd = e.subdiarios.find(s=>s.codigo===a.subdiario);
+      const detail = a.lines.map(l=>{
+        const acc = e.cuentas.find(x=>x.codigo===l.cuenta) || {desc:'(cuenta eliminada)'};
+        return `<tr><td>${l.cuenta} — ${acc.desc}</td><td class="num-cell">${l.debe?fmt(l.debe):''}</td><td class="num-cell">${l.haber?fmt(l.haber):''}</td></tr>`;
+      }).join('');
+      return `<tr class="comp-row" onclick="toggleDetail('${a.numero}')"><td class="mono">${a.numero}</td><td>${a.fecha}</td><td><span class="pill blue">${a.tipo}</span></td><td class="mono">${sd?sd.codigo:(a.subdiario||'—')}</td><td>${a.glosa}</td>
+        <td class="num-cell">S/ ${fmt(total)}</td>
+        <td>${canEdit()?`<button class="btn sm danger" onclick="event.stopPropagation(); deleteAsiento('${a.numero}')">Eliminar</button>`:''}</td></tr>
+        <tr class="comp-detail" id="detail-${a.numero}" style="display:none;"><td colspan="7">
+        <table class="mini-table"><thead><tr><th>Cuenta</th><th style="text-align:right;">Debe</th><th style="text-align:right;">Haber</th></tr></thead>
+        <tbody>${detail}</tbody></table></td></tr>`;
+    }).join('');
+  }
+}
+function toggleDetail(numero){ const row=document.getElementById('detail-'+numero); row.style.display = row.style.display==='none'?'table-row':'none'; }
+function renderDraftLines(){
+  const e = activeEmpresa();
+  document.getElementById('lines-container').innerHTML = draftLines.map((l,i)=>`
+    <div class="line-row">
+      <select onchange="updateDraftLine(${i},'cuenta',this.value)">${accountOptions(e, l.cuenta)}</select>
+      <input type="number" min="0" step="0.01" placeholder="0.00" value="${l.debe}" onchange="updateDraftLine(${i},'debe',this.value)">
+      <input type="number" min="0" step="0.01" placeholder="0.00" value="${l.haber}" onchange="updateDraftLine(${i},'haber',this.value)">
+      <button class="rm" onclick="removeLine(${i})">✕</button>
+    </div>`).join('');
+  updateTotals();
+}
+function updateDraftLine(idx, field, value){
+  if(field==='debe' && parseFloat(value)>0) draftLines[idx].haber='';
+  if(field==='haber' && parseFloat(value)>0) draftLines[idx].debe='';
+  draftLines[idx][field]=value; renderDraftLines();
+}
+function addLine(){ draftLines.push({cuenta:'',debe:'',haber:''}); renderDraftLines(); }
+function removeLine(idx){ if(draftLines.length<=2) return; draftLines.splice(idx,1); renderDraftLines(); }
+function updateTotals(){
+  const sumDebe = draftLines.reduce((s,l)=>s+(parseFloat(l.debe)||0),0);
+  const sumHaber = draftLines.reduce((s,l)=>s+(parseFloat(l.haber)||0),0);
+  const diff = Math.round((sumDebe-sumHaber)*100)/100;
+  const ok = diff===0 && sumDebe>0 && draftLines.every(l=>l.cuenta && (parseFloat(l.debe)>0||parseFloat(l.haber)>0));
+  document.getElementById('totals-row').innerHTML = `<span>Totales</span><span class="num-cell">${fmt(sumDebe)}</span><span class="num-cell">${fmt(sumHaber)}</span>
+    <span class="${diff===0?'diff-ok':'diff-bad'}">${diff===0?'✓':'≠'}</span>`;
+  document.getElementById('btn-save-asiento').disabled = !ok;
+}
+function saveAsiento(){
+  const e = activeEmpresa();
+  const fecha = document.getElementById('a-fecha').value || todayStr();
+  const glosa = document.getElementById('a-glosa').value.trim() || '(sin glosa)';
+  const tipo = document.getElementById('a-tipo').value || 'Apertura';
+  const subdiario = document.getElementById('a-subdiario').value || '01';
+  if(!periodoAbierto(e, fecha)){
+    document.getElementById('asientos-blocker').innerHTML = `<div class="banner-block"><span>El periodo <b>${fecha.slice(0,4)}</b> está cerrado. Elija una fecha de un periodo abierto o cree uno nuevo en "Periodos contables".</span></div>`;
+    return;
+  }
+  const lines = draftLines.filter(l=>l.cuenta && (parseFloat(l.debe)>0||parseFloat(l.haber)>0)).map(l=>({cuenta:l.cuenta, debe:parseFloat(l.debe)||0, haber:parseFloat(l.haber)||0}));
+  const numero = addAsientoRaw(e, {fecha, glosa, tipo, subdiario, lines});
+  logAudit('Registrar asiento', `Asiento ${numero} (${tipo}) en ${e.nombre}: ${glosa}`);
+  draftLines = [{cuenta:'',debe:'',haber:''},{cuenta:'',debe:'',haber:''}];
+  document.getElementById('a-fecha').value=''; document.getElementById('a-glosa').value='';
+  renderAsientos(); renderMayor(); renderPlanCuentas(); renderDashboard(); renderDiario(); renderBalance(); renderResultados();
+}
+function deleteAsiento(numero){
+  const e = activeEmpresa();
+  e.asientos = e.asientos.filter(a=>a.numero!==numero);
+  logAudit('Eliminar asiento', `Asiento ${numero} eliminado en ${e.nombre}`);
+  renderAsientos(); renderMayor(); renderPlanCuentas(); renderDashboard(); renderDiario(); renderBalance(); renderResultados(); saveState();
+}
+
+/* ==========================================================================
+   LIBRO DIARIO
+   ========================================================================== */
+function diarioFiltrado(e){
+  const sel = document.getElementById('diario-subdiario-filter');
+  const prev = sel.value;
+  sel.innerHTML = `<option value="">Todos los subdiarios</option>` + e.subdiarios.map(s=>`<option value="${s.codigo}">${s.codigo} — ${s.nombre}</option>`).join('');
+  if(prev) sel.value = prev;
+  let ordered = e.asientos.slice().sort((a,b)=> a.fecha.localeCompare(b.fecha) || a.numero.localeCompare(b.numero));
+  if(sel.value) ordered = ordered.filter(a=>a.subdiario===sel.value);
+  return ordered;
+}
+function renderDiario(){
+  const e = activeEmpresa();
+  const body = document.getElementById('diario-body');
+  const empty = document.getElementById('diario-empty');
+  const ordered = diarioFiltrado(e);
+  if(!ordered.length){ body.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  body.innerHTML = ordered.map(a=>{
+    const sd = e.subdiarios.find(s=>s.codigo===a.subdiario);
+    const rows = a.lines.map(l=>{
+      const acc = e.cuentas.find(x=>x.codigo===l.cuenta) || {desc:'(cuenta eliminada)'};
+      return `<tr><td style="padding-left:18px;">${l.cuenta} — ${acc.desc}</td><td class="num-cell">${l.debe?fmt(l.debe):''}</td><td class="num-cell">${l.haber?fmt(l.haber):''}</td></tr>`;
+    }).join('');
+    return `<div class="diario-block">
+      <div class="diario-head"><span><b>N° ${a.numero}</b> · ${a.fecha} · <span class="pill blue">${a.tipo}</span> · ${sd?sd.nombre:a.subdiario} · ${a.glosa}</span></div>
+      <table class="mini-table" style="padding:6px 10px;"><tbody>${rows}</tbody></table>
+    </div>`;
+  }).join('');
+}
+function exportDiarioPDF(){
+  const e = activeEmpresa();
+  const ordered = diarioFiltrado(e);
+  const rows = [];
+  ordered.forEach(a=>{
+    a.lines.forEach((l,i)=>{
+      const acc = e.cuentas.find(x=>x.codigo===l.cuenta) || {desc:''};
+      rows.push([i===0?a.numero:'', i===0?a.fecha:'', i===0?a.tipo:'', i===0?a.glosa:'', l.cuenta+' — '+acc.desc, l.debe?fmt(l.debe):'', l.haber?fmt(l.haber):'']);
+    });
+  });
+  exportPDF('Libro Diario', ['N°','Fecha','Tipo','Glosa','Cuenta','Debe','Haber'], rows, 'libro-diario.pdf');
+}
+
+/* ==========================================================================
+   LIBRO MAYOR
+   ========================================================================== */
+function renderMayor(){
+  const e = activeEmpresa();
+  const sel = document.getElementById('mayor-cuenta');
+  const prev = sel.value;
+  sel.innerHTML = e.cuentas.map(a=>`<option value="${a.codigo}">${a.codigo} — ${a.desc}</option>`).join('');
+  if(prev && e.cuentas.some(a=>a.codigo===prev)) sel.value = prev;
+  renderMayorMovs();
+}
+document.getElementById('mayor-cuenta').addEventListener('change', renderMayorMovs);
+function movimientosDeCuenta(empresa, codigo){
+  const cuenta = empresa.cuentas.find(a=>a.codigo===codigo);
+  if(!cuenta) return {rows:[], saldo:0, cuenta:null};
+  let saldo=0; const rows=[];
+  empresa.asientos.slice().sort((a,b)=>a.fecha.localeCompare(b.fecha)).forEach(a=>{
+    a.lines.forEach(l=>{
+      if(l.cuenta===codigo){
+        saldo += NORMAL_DEBE[cuenta.tipo] ? (l.debe-l.haber) : (l.haber-l.debe);
+        rows.push({fecha:a.fecha, glosa:a.glosa, debe:l.debe, haber:l.haber, saldo});
+      }
+    });
+  });
+  return {rows, saldo, cuenta};
+}
+function renderMayorMovs(){
+  const e = activeEmpresa();
+  const codigo = document.getElementById('mayor-cuenta').value;
+  const {rows} = movimientosDeCuenta(e, codigo);
+  const body = document.getElementById('mayor-body'); const empty = document.getElementById('mayor-empty');
+  if(!rows.length){ body.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  body.innerHTML = rows.map(r=>`<tr><td>${r.fecha}</td><td>${r.glosa}</td><td class="num-cell">${r.debe?fmt(r.debe):''}</td><td class="num-cell">${r.haber?fmt(r.haber):''}</td><td class="num-cell">${fmt(r.saldo)}</td></tr>`).join('');
+}
+function exportMayorPDF(){
+  const e = activeEmpresa();
+  const codigo = document.getElementById('mayor-cuenta').value;
+  const {rows, cuenta} = movimientosDeCuenta(e, codigo);
+  if(!cuenta) return;
+  const body = rows.map(r=>[r.fecha, r.glosa, r.debe?fmt(r.debe):'', r.haber?fmt(r.haber):'', fmt(r.saldo)]);
+  exportPDF('Libro Mayor — '+cuenta.codigo+' '+cuenta.desc, ['Fecha','Glosa','Debe','Haber','Saldo'], body, 'libro-mayor-'+cuenta.codigo+'.pdf');
+}
+
+/* ==========================================================================
+   BALANCE GENERAL
+   ========================================================================== */
+function computeBalanceData(e){
+  const saldos = computeSaldos(e);
+  const activo = saldos.filter(s=>s.tipo==='Activo');
+  const pasivo = saldos.filter(s=>s.tipo==='Pasivo');
+  const patrimonio = saldos.filter(s=>s.tipo==='Patrimonio');
+  const ingresos = saldos.filter(s=>s.tipo==='Ingreso').reduce((s,a)=>s+a.saldo,0);
+  const gastos = saldos.filter(s=>s.tipo==='Gasto').reduce((s,a)=>s+a.saldo,0);
+  const resultado = ingresos-gastos;
+  const totalActivo = activo.reduce((s,a)=>s+a.saldo,0);
+  const totalPasivo = pasivo.reduce((s,a)=>s+a.saldo,0);
+  const totalPatrimonioCuentas = patrimonio.reduce((s,a)=>s+a.saldo,0);
+  const totalPatrimonio = totalPatrimonioCuentas + resultado;
+  return {activo, pasivo, patrimonio, resultado, totalActivo, totalPasivo, totalPatrimonio};
+}
+function renderBalance(){
+  const e = activeEmpresa();
+  const d = computeBalanceData(e);
+  const rowsOf = (arr)=>arr.map(a=>`<tr><td class="mono">${a.codigo}</td><td>${a.desc}</td><td class="num-cell">S/ ${fmt(a.saldo)}</td></tr>`).join('');
+  document.getElementById('balance-body').innerHTML = `
+    <div class="grid2">
+      <div>
+        <table class="data"><thead><tr><th colspan="3">ACTIVO</th></tr></thead><tbody>
+        ${rowsOf(d.activo)}
+        <tr class="total-row"><td colspan="2">Total activo</td><td class="num-cell">S/ ${fmt(d.totalActivo)}</td></tr></tbody></table>
+      </div>
+      <div>
+        <table class="data"><thead><tr><th colspan="3">PASIVO</th></tr></thead><tbody>
+        ${rowsOf(d.pasivo)}
+        <tr class="subtotal-row"><td colspan="2">Total pasivo</td><td class="num-cell">S/ ${fmt(d.totalPasivo)}</td></tr></tbody></table>
+        <table class="data" style="margin-top:14px;"><thead><tr><th colspan="3">PATRIMONIO</th></tr></thead><tbody>
+        ${rowsOf(d.patrimonio)}
+        <tr><td class="mono">—</td><td>Resultado del ejercicio</td><td class="num-cell">S/ ${fmt(d.resultado)}</td></tr>
+        <tr class="subtotal-row"><td colspan="2">Total patrimonio</td><td class="num-cell">S/ ${fmt(d.totalPatrimonio)}</td></tr></tbody></table>
+        <table class="data" style="margin-top:14px;"><tbody>
+        <tr class="total-row"><td colspan="2">Total pasivo + patrimonio</td><td class="num-cell">S/ ${fmt(d.totalPasivo+d.totalPatrimonio)}</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="note" style="${Math.abs(d.totalActivo-(d.totalPasivo+d.totalPatrimonio))<0.01?'border-color:var(--teal); color:var(--teal);':'border-color:var(--rust); color:var(--rust);'}">
+      ${Math.abs(d.totalActivo-(d.totalPasivo+d.totalPatrimonio))<0.01 ? '✓ El balance cuadra: Activo = Pasivo + Patrimonio.' : '⚠ El balance no cuadra, revise los asientos registrados.'}
+    </div>`;
+}
+function exportBalancePDF(){
+  const e = activeEmpresa(); const d = computeBalanceData(e);
+  const rows = [];
+  rows.push(['ACTIVO','','']);
+  d.activo.forEach(a=>rows.push([a.codigo, a.desc, fmt(a.saldo)]));
+  rows.push(['','Total activo', fmt(d.totalActivo)]);
+  rows.push(['PASIVO','','']);
+  d.pasivo.forEach(a=>rows.push([a.codigo, a.desc, fmt(a.saldo)]));
+  rows.push(['','Total pasivo', fmt(d.totalPasivo)]);
+  rows.push(['PATRIMONIO','','']);
+  d.patrimonio.forEach(a=>rows.push([a.codigo, a.desc, fmt(a.saldo)]));
+  rows.push(['','Resultado del ejercicio', fmt(d.resultado)]);
+  rows.push(['','Total patrimonio', fmt(d.totalPatrimonio)]);
+  exportPDF('Balance General', ['Código','Cuenta','Saldo (S/)'], rows, 'balance-general.pdf');
+}
+
+/* ==========================================================================
+   ESTADO DE RESULTADOS
+   ========================================================================== */
+function computeResultadosData(e){
+  const saldos = computeSaldos(e);
+  const ingresos = saldos.filter(s=>s.tipo==='Ingreso');
+  const gastos = saldos.filter(s=>s.tipo==='Gasto');
+  const totalIngresos = ingresos.reduce((s,a)=>s+a.saldo,0);
+  const totalGastos = gastos.reduce((s,a)=>s+a.saldo,0);
+  return {ingresos, gastos, totalIngresos, totalGastos, resultado: totalIngresos-totalGastos};
+}
+function renderResultados(){
+  const e = activeEmpresa(); const d = computeResultadosData(e);
+  const rowsOf = (arr)=>arr.map(a=>`<tr><td class="mono">${a.codigo}</td><td>${a.desc}</td><td class="num-cell">S/ ${fmt(a.saldo)}</td></tr>`).join('');
+  document.getElementById('resultados-body').innerHTML = `
+    <table class="data"><thead><tr><th colspan="3">INGRESOS</th></tr></thead><tbody>
+    ${rowsOf(d.ingresos)}
+    <tr class="subtotal-row"><td colspan="2">Total ingresos</td><td class="num-cell">S/ ${fmt(d.totalIngresos)}</td></tr></tbody></table>
+    <table class="data" style="margin-top:14px;"><thead><tr><th colspan="3">GASTOS</th></tr></thead><tbody>
+    ${rowsOf(d.gastos)}
+    <tr class="subtotal-row"><td colspan="2">Total gastos</td><td class="num-cell">S/ ${fmt(d.totalGastos)}</td></tr></tbody></table>
+    <table class="data" style="margin-top:14px;"><tbody>
+    <tr class="total-row"><td colspan="2">${d.resultado>=0?'Utilidad':'Pérdida'} del ejercicio</td><td class="num-cell">S/ ${fmt(d.resultado)}</td></tr></tbody></table>`;
+}
+function exportResultadosPDF(){
+  const e = activeEmpresa(); const d = computeResultadosData(e);
+  const rows = [['INGRESOS','','']];
+  d.ingresos.forEach(a=>rows.push([a.codigo,a.desc,fmt(a.saldo)]));
+  rows.push(['','Total ingresos', fmt(d.totalIngresos)]);
+  rows.push(['GASTOS','','']);
+  d.gastos.forEach(a=>rows.push([a.codigo,a.desc,fmt(a.saldo)]));
+  rows.push(['','Total gastos', fmt(d.totalGastos)]);
+  rows.push(['', (d.resultado>=0?'Utilidad':'Pérdida')+' del ejercicio', fmt(d.resultado)]);
+  exportPDF('Estado de Resultados', ['Código','Cuenta','Monto (S/)'], rows, 'estado-resultados.pdf');
+}
+
+/* ==========================================================================
+   CAJA Y BANCOS (módulos genéricos)
+   ========================================================================== */
+function renderTesoreria(containerId, subtipo, tituloSingular){
+  const e = activeEmpresa();
+  const cuentasTipo = e.cuentas.filter(a=>a.subtipo===subtipo);
+  const box = document.getElementById(containerId);
+  if(!cuentasTipo.length){
+    box.innerHTML = `<div class="banner-block info"><span>No hay cuentas de tipo <b>${subtipo}</b> en el plan contable de esta empresa.</span>
+      <button class="btn sm primary" onclick="goto('plancuentas')">Ir a plan contable</button></div>`;
+    return;
+  }
+  const readOnly = !canEdit();
+  box.innerHTML = `
+    <div class="card">
+      <h3>Saldos de ${subtipo.toLowerCase()}</h3>
+      <table class="data"><thead><tr><th>Cuenta</th><th style="text-align:right;">Saldo</th></tr></thead><tbody>
+      ${cuentasTipo.map(a=>{const s=saldoCuenta(e,a.codigo,a.tipo); return `<tr><td>${a.codigo} — ${a.desc}</td><td class="num-cell">S/ ${fmt(s.saldo)}</td></tr>`;}).join('')}
+      </tbody></table>
+    </div>
+    ${readOnly ? '' : `
+    <div class="card">
+      <h3>Registrar movimiento de ${subtipo.toLowerCase()}</h3>
+      <div class="grid3">
+        <div class="field"><label>Tipo</label><select id="tes-tipo-${subtipo}"><option value="Ingreso">Ingreso</option><option value="Egreso">Egreso</option></select></div>
+        <div class="field"><label>Cuenta ${subtipo.toLowerCase()}</label><select id="tes-cuenta-${subtipo}">${cuentasTipo.map(a=>`<option value="${a.codigo}">${a.codigo} — ${a.desc}</option>`).join('')}</select></div>
+        <div class="field"><label>Monto (S/)</label><input type="number" step="0.01" id="tes-monto-${subtipo}"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Cuenta contrapartida</label><select id="tes-contra-${subtipo}">${accountOptions(e, '', a=>a.subtipo!==subtipo)}</select></div>
+        <div class="field"><label>Glosa</label><input type="text" id="tes-glosa-${subtipo}" placeholder="Ej. Pago de servicios"></div>
+      </div>
+      <button class="btn primary" onclick="saveTesoreria('${subtipo}')">＋ Registrar movimiento</button>
+    </div>`}
+    <div class="card">
+      <h3>Movimientos registrados</h3>
+      <div id="tes-movs-${subtipo}"></div>
+    </div>`;
+  const movsBox = document.getElementById('tes-movs-'+subtipo);
+  const allRows = [];
+  cuentasTipo.forEach(a=>{
+    const {rows} = movimientosDeCuenta(e, a.codigo);
+    rows.forEach(r=>allRows.push(Object.assign({cuentaDesc:a.codigo+' — '+a.desc}, r)));
+  });
+  allRows.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  movsBox.innerHTML = allRows.length ? `<table class="data"><thead><tr><th>Fecha</th><th>Cuenta</th><th>Glosa</th><th style="text-align:right;">Debe</th><th style="text-align:right;">Haber</th></tr></thead>
+    <tbody>${allRows.map(r=>`<tr><td>${r.fecha}</td><td>${r.cuentaDesc}</td><td>${r.glosa}</td><td class="num-cell">${r.debe?fmt(r.debe):''}</td><td class="num-cell">${r.haber?fmt(r.haber):''}</td></tr>`).join('')}</tbody></table>`
+    : `<div class="hint">Sin movimientos todavía.</div>`;
+}
+function saveTesoreria(subtipo){
+  const e = activeEmpresa();
+  const tipo = document.getElementById('tes-tipo-'+subtipo).value;
+  const cuenta = document.getElementById('tes-cuenta-'+subtipo).value;
+  const monto = parseFloat(document.getElementById('tes-monto-'+subtipo).value)||0;
+  const contra = document.getElementById('tes-contra-'+subtipo).value;
+  const glosa = document.getElementById('tes-glosa-'+subtipo).value.trim() || (tipo+' de '+subtipo.toLowerCase());
+  if(!cuenta || !contra || monto<=0){ return; }
+  const containerId = subtipo==='Caja' ? 'caja-content' : 'bancos-content';
+  const fecha = todayStr();
+  if(!periodoAbierto(e, fecha)){
+    document.getElementById(containerId).insertAdjacentHTML('afterbegin', `<div class="banner-block"><span>El periodo <b>${fecha.slice(0,4)}</b> está cerrado, no se pueden registrar movimientos.</span></div>`);
+    return;
+  }
+  const lines = tipo==='Ingreso'
+    ? [{cuenta, debe:monto, haber:0},{cuenta:contra, debe:0, haber:monto}]
+    : [{cuenta:contra, debe:monto, haber:0},{cuenta, debe:0, haber:monto}];
+  const numero = addAsientoRaw(e, {fecha, glosa, tipo:'Tesorería', subdiario:'04', lines});
+  logAudit('Movimiento de '+subtipo, `${tipo} de S/ ${fmt(monto)} — asiento ${numero}`);
+  renderTesoreria(containerId, subtipo, subtipo);
+  renderDashboard(); renderPlanCuentas(); renderMayor(); renderAsientos(); renderDiario(); renderBalance(); renderSubdiarios(); renderTiposAsiento();
+}
+function renderCaja(){ renderTesoreria('caja-content','Caja','Caja'); }
+function renderBancos(){ renderTesoreria('bancos-content','Banco','Banco'); }
+
+/* ==========================================================================
+   COMPRAS
+   ========================================================================== */
+function renderCompraPago(){
+  const e = activeEmpresa();
+  const forma = document.getElementById('cp-forma').value;
+  const box = document.getElementById('cp-pago-cuenta');
+  if(forma==='credito'){ box.innerHTML=''; return; }
+  const subtipo = forma==='caja' ? 'Caja' : 'Banco';
+  const cuentas = e.cuentas.filter(a=>a.subtipo===subtipo);
+  box.innerHTML = cuentas.length ? `<div class="field" style="max-width:320px;"><label>Cuenta de pago</label><select id="cp-cuenta-pago">${cuentas.map(a=>`<option value="${a.codigo}">${a.codigo} — ${a.desc}</option>`).join('')}</select></div>`
+    : `<div class="hint">No hay cuentas de ${subtipo.toLowerCase()} configuradas.</div>`;
+}
+function updateCompraTotales(){
+  const base = parseFloat(document.getElementById('cp-base').value)||0;
+  const igv = base*IGV_RATE;
+  document.getElementById('cp-totales').textContent = `IGV (18%): S/ ${fmt(igv)} · Total: S/ ${fmt(base+igv)}`;
+}
+function renderCompras(){
+  const e = activeEmpresa();
+  const blocker = document.getElementById('compras-blocker');
+  const formCard = document.getElementById('compras-form-card');
+  if(!canEdit()){ blocker.innerHTML = `<div class="banner-block info"><span>Su rol tiene acceso de solo lectura a compras.</span></div>`; formCard.style.display='none'; }
+  else { blocker.innerHTML=''; formCard.style.display='block'; renderCompraPago(); updateCompraTotales(); }
+  const compras = e.asientos.filter(a=>a.tipo==='Compras');
+  const body = document.getElementById('compras-body'); const empty = document.getElementById('compras-empty');
+  if(!compras.length){ body.innerHTML=''; empty.style.display='block'; }
+  else{ empty.style.display='none';
+    body.innerHTML = compras.slice().reverse().map(a=>`<tr><td class="mono">${a.numero}</td><td>${a.fecha}</td><td>${a.meta?a.meta.tercero:''}</td>
+      <td class="num-cell">${a.meta?fmt(a.meta.base):''}</td><td class="num-cell">${a.meta?fmt(a.meta.igv):''}</td><td class="num-cell">${a.meta?fmt(a.meta.total):''}</td>
+      <td><span class="pill gold">${a.meta?a.meta.formaPago:''}</span></td></tr>`).join('');
+  }
+}
+function saveCompra(){
+  const e = activeEmpresa();
+  const fecha = document.getElementById('cp-fecha').value || todayStr();
+  const proveedor = document.getElementById('cp-proveedor').value.trim() || 'Proveedor sin nombre';
+  const ruc = document.getElementById('cp-ruc').value.trim();
+  const desc = document.getElementById('cp-desc').value.trim() || 'Compra de mercadería';
+  const base = parseFloat(document.getElementById('cp-base').value)||0;
+  const forma = document.getElementById('cp-forma').value;
+  if(base<=0) return;
+  if(!periodoAbierto(e, fecha)){
+    document.getElementById('compras-blocker').innerHTML = `<div class="banner-block"><span>El periodo <b>${fecha.slice(0,4)}</b> está cerrado.</span></div>`;
+    return;
+  }
+  const igv = base*IGV_RATE; const total = base+igv;
+  let cuentaPago;
+  if(forma==='credito') cuentaPago = e.cuentas.find(a=>a.codigo==='421101') ? '421101' : (e.cuentas.find(a=>a.tipo==='Pasivo'&&a.postable)||{}).codigo;
+  else cuentaPago = document.getElementById('cp-cuenta-pago') ? document.getElementById('cp-cuenta-pago').value : null;
+  if(!cuentaPago) return;
+  const cuentaCompras = e.cuentas.find(a=>a.codigo==='601101') ? '601101' : (e.cuentas.find(a=>a.tipo==='Gasto'&&a.postable)||{}).codigo;
+  const cuentaIGV = e.cuentas.find(a=>a.codigo==='401101') ? '401101' : (e.cuentas.find(a=>a.tipo==='Pasivo'&&a.postable)||{}).codigo;
+  if(!cuentaCompras || !cuentaIGV){
+    document.getElementById('compras-blocker').innerHTML = `<div class="banner-block"><span>Falta una cuenta de Gasto o Pasivo en el plan contable para registrar la compra.</span></div>`;
+    return;
+  }
+  const lines = [{cuenta:cuentaCompras, debe:base, haber:0},{cuenta:cuentaIGV, debe:igv, haber:0},{cuenta:cuentaPago, debe:0, haber:total}];
+  const numero = addAsientoRaw(e, {fecha, glosa:desc+' — '+proveedor, tipo:'Compras', subdiario:'02', lines, meta:{tercero:proveedor, ruc, base, igv, total, formaPago:forma}});
+  logAudit('Registrar compra', `Compra ${numero} a ${proveedor} por S/ ${fmt(total)}`);
+  ['cp-proveedor','cp-ruc','cp-desc','cp-base'].forEach(id=>document.getElementById(id).value='');
+  renderCompras(); renderAsientos(); renderMayor(); renderPlanCuentas(); renderDashboard(); renderDiario(); renderBalance(); renderResultados(); renderSubdiarios(); renderTiposAsiento();
+}
+
+/* ==========================================================================
+   VENTAS
+   ========================================================================== */
+function renderVentaCobro(){
+  const e = activeEmpresa();
+  const forma = document.getElementById('vt-forma').value;
+  const box = document.getElementById('vt-cobro-cuenta');
+  if(forma==='credito'){ box.innerHTML=''; return; }
+  const subtipo = forma==='caja' ? 'Caja' : 'Banco';
+  const cuentas = e.cuentas.filter(a=>a.subtipo===subtipo);
+  box.innerHTML = cuentas.length ? `<div class="field" style="max-width:320px;"><label>Cuenta de cobro</label><select id="vt-cuenta-cobro">${cuentas.map(a=>`<option value="${a.codigo}">${a.codigo} — ${a.desc}</option>`).join('')}</select></div>`
+    : `<div class="hint">No hay cuentas de ${subtipo.toLowerCase()} configuradas.</div>`;
+}
+function updateVentaTotales(){
+  const base = parseFloat(document.getElementById('vt-base').value)||0;
+  const igv = base*IGV_RATE;
+  document.getElementById('vt-totales').textContent = `IGV (18%): S/ ${fmt(igv)} · Total: S/ ${fmt(base+igv)}`;
+}
+function renderVentas(){
+  const e = activeEmpresa();
+  const blocker = document.getElementById('ventas-blocker');
+  const formCard = document.getElementById('ventas-form-card');
+  if(!canEdit()){ blocker.innerHTML = `<div class="banner-block info"><span>Su rol tiene acceso de solo lectura a ventas.</span></div>`; formCard.style.display='none'; }
+  else { blocker.innerHTML=''; formCard.style.display='block'; renderVentaCobro(); updateVentaTotales(); }
+  const ventas = e.asientos.filter(a=>a.tipo==='Ventas');
+  const body = document.getElementById('ventas-body'); const empty = document.getElementById('ventas-empty');
+  if(!ventas.length){ body.innerHTML=''; empty.style.display='block'; }
+  else{ empty.style.display='none';
+    body.innerHTML = ventas.slice().reverse().map(a=>`<tr><td class="mono">${a.numero}</td><td>${a.fecha}</td><td>${a.meta?a.meta.tercero:''}</td>
+      <td class="num-cell">${a.meta?fmt(a.meta.base):''}</td><td class="num-cell">${a.meta?fmt(a.meta.igv):''}</td><td class="num-cell">${a.meta?fmt(a.meta.total):''}</td>
+      <td><span class="pill teal">${a.meta?a.meta.formaPago:''}</span></td></tr>`).join('');
+  }
+}
+function saveVenta(){
+  const e = activeEmpresa();
+  const fecha = document.getElementById('vt-fecha').value || todayStr();
+  const cliente = document.getElementById('vt-cliente').value.trim() || 'Cliente sin nombre';
+  const ruc = document.getElementById('vt-ruc').value.trim();
+  const desc = document.getElementById('vt-desc').value.trim() || 'Venta de mercadería';
+  const base = parseFloat(document.getElementById('vt-base').value)||0;
+  const forma = document.getElementById('vt-forma').value;
+  if(base<=0) return;
+  if(!periodoAbierto(e, fecha)){
+    document.getElementById('ventas-blocker').innerHTML = `<div class="banner-block"><span>El periodo <b>${fecha.slice(0,4)}</b> está cerrado.</span></div>`;
+    return;
+  }
+  const igv = base*IGV_RATE; const total = base+igv;
+  let cuentaCobro;
+  if(forma==='credito') cuentaCobro = e.cuentas.find(a=>a.codigo==='121101') ? '121101' : (e.cuentas.find(a=>a.tipo==='Activo'&&a.postable)||{}).codigo;
+  else cuentaCobro = document.getElementById('vt-cuenta-cobro') ? document.getElementById('vt-cuenta-cobro').value : null;
+  if(!cuentaCobro) return;
+  const cuentaVentas = e.cuentas.find(a=>a.codigo==='701101') ? '701101' : (e.cuentas.find(a=>a.tipo==='Ingreso'&&a.postable)||{}).codigo;
+  const cuentaIGV = e.cuentas.find(a=>a.codigo==='401101') ? '401101' : (e.cuentas.find(a=>a.tipo==='Pasivo'&&a.postable)||{}).codigo;
+  if(!cuentaVentas || !cuentaIGV){
+    document.getElementById('ventas-blocker').innerHTML = `<div class="banner-block"><span>Falta una cuenta de Ingreso o Pasivo en el plan contable para registrar la venta.</span></div>`;
+    return;
+  }
+  const lines = [{cuenta:cuentaCobro, debe:total, haber:0},{cuenta:cuentaVentas, debe:0, haber:base},{cuenta:cuentaIGV, debe:0, haber:igv}];
+  const numero = addAsientoRaw(e, {fecha, glosa:desc+' — '+cliente, tipo:'Ventas', subdiario:'03', lines, meta:{tercero:cliente, ruc, base, igv, total, formaPago:forma}});
+  logAudit('Registrar venta', `Venta ${numero} a ${cliente} por S/ ${fmt(total)}`);
+  ['vt-cliente','vt-ruc','vt-desc','vt-base'].forEach(id=>document.getElementById(id).value='');
+  renderVentas(); renderAsientos(); renderMayor(); renderPlanCuentas(); renderDashboard(); renderDiario(); renderBalance(); renderResultados(); renderSubdiarios(); renderTiposAsiento();
+}
+
+/* ==========================================================================
+   AUDITORÍA
+   ========================================================================== */
+function renderAuditoria(){
+  const filter = (document.getElementById('audit-filter').value||'').toLowerCase();
+  const rows = state.auditoria.filter(a=>!filter || a.usuario.toLowerCase().includes(filter) || a.accion.toLowerCase().includes(filter));
+  const body = document.getElementById('audit-body'); const empty = document.getElementById('audit-empty');
+  if(!rows.length){ body.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  body.innerHTML = rows.map(a=>`<tr><td class="mono">${a.fecha}</td><td>${a.usuario}</td><td><span class="pill blue">${a.accion}</span></td><td>${a.detalle}</td></tr>`).join('');
+}
+
+/* ==========================================================================
+   PDF GENÉRICO
+   ========================================================================== */
+function exportPDF(title, head, body, filename){
+  try{
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF();
+    const e = activeEmpresa();
+    doc.setFontSize(14); doc.text(title, 14, 16);
+    doc.setFontSize(9); doc.text('Empresa: '+e.nombre+'  ·  RUC: '+e.ruc+'  ·  Generado: '+nowStr(), 14, 22);
+    doc.autoTable({startY:27, head:[head], body:body, styles:{fontSize:8}, headStyles:{fillColor:[16,24,43]}});
+    doc.save(filename);
+    logAudit('Reporte PDF', title+' descargado ('+filename+')');
+  }catch(err){ console.error('Error generando PDF', err); }
+}
+
+/* ==========================================================================
+   RENDER GLOBAL E INICIALIZACIÓN
+   ========================================================================== */
+function renderAll(){
+  renderSwitcher(); renderDashboard(); renderPlanCuentas(); renderSubdiarios(); renderTiposAsiento(); renderPeriodos();
+  renderAsientos(); renderDiario(); renderMayor(); renderBalance(); renderResultados(); renderCaja(); renderBancos();
+  renderCompras(); renderVentas(); renderUsuarios(); renderRoles(); renderEmpresas(); renderAuditoria();
+}
+
+async function init(){
+  await loadState();
+  document.getElementById('a-fecha').value = todayStr();
+  document.getElementById('cp-fecha').value = todayStr();
+  document.getElementById('vt-fecha').value = todayStr();
+  document.querySelectorAll('#view-empresas .option').forEach(opt=>{
+    opt.addEventListener('click', ()=>{ document.querySelectorAll('#view-empresas .option').forEach(o=>o.classList.remove('selected')); opt.classList.add('selected'); });
+  });
+  if(state.session && state.session.usuarioId && state.usuarios.some(u=>u.id===state.session.usuarioId)){
+    showApp();
+  } else {
+    document.getElementById('login-screen').style.display='flex';
+  }
+  document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+}
+init();
+</script>
+</body>
+</html>
